@@ -1,0 +1,25 @@
+[
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-Wall",
+            "-std=c++17",
+            "-D_DEFAULT_SOURCE",
+            "-Wno-missing-braces",
+            "-O1",
+            "-D_DEFAULT_SOURCE",
+            "-I/usr/local/include",
+            "-isystem.",
+            "-isystem/mnt/FC8006E78006A7EA/Users/tarek/Desktop/VSCode/src",
+            "-isystem/mnt/FC8006E78006A7EA/Users/tarek/Desktop/VSCode/release/include",
+            "-isystem/mnt/FC8006E78006A7EA/Users/tarek/Desktop/VSCode/src/external",
+            "-DPLATFORM_DESKTOP",
+            "-o",
+            "RaylibPong",
+            "RaylibPong.cpp"
+        ],
+        "directory": "/mnt/FC8006E78006A7EA/Users/tarek/Desktop/VSCode/RaylibPong",
+        "file": "RaylibPong.cpp"
+    }
+]
