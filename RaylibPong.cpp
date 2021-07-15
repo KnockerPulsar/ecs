@@ -1,12 +1,23 @@
-#include "src/Includes.h"
+#include "raylib.h"
+#include <unordered_map>
+#include <vector>
+#include <string>
+#include "src/Paddle.h"
+#include "src/Ball.h"
+#include "src/System.h"
+#include "src/Entity.h"
+#include "src/Component.h"
+#include "src/BaseCollision.h"
+#include "src/RectCollision.h"
+#include "src/RectCollision.cpp"
+#include "src/BallCollision.cpp"
+#include "src/Ball.cpp"
+#include "src/Entity.cpp"
 
 // KNOWN BUG: If you hit the ball with the side of the paddle, the ball might get stuck
 // inside the paddle;
 
-// TODO: Scale the paddles down
-// TODO: COLOR PAD SEGMENTS WHEN HIT
-// TODO: Change gamestates to be function ptrs instead of using a switch statement
-// TODO: Use an enum or a define for gamestate
+// TODO: Collision
 
 /*
   ecs System:
@@ -23,9 +34,11 @@ int main()
   const int screenHeight = 720;
   InitWindow(screenWidth, screenHeight, "RaylibPong");
   SetTargetFPS(60);
+  SetTraceLogLevel(LOG_ALL);
 
-  // Map the system's component's name to it
-  std::map<std::string, pong::System *> systems;
+  // System storage creation
+  // Each system corresponds to a tag
+  std::unordered_map<pong::tags, pong::System *, pong::TagsHashClass> systems;
 
   // Common paddle variables
   Vector2 PaddleSize{15, 100};
@@ -36,36 +49,45 @@ int main()
   // Left and right paddle inits
   pong::Entity leftPaddle;
   Vector2 lPaddlePos = (Vector2){PaddleSize.x, screenHeight / 2};
-  Paddle lPaddleComp(
+  pong::Paddle lPaddleComp(
       &lPaddlePos,
       PaddleSize,
       PaddleSpeed,
       1,
       BLUE);
+  pong::RectCollision lInitColl = pong::RectCollision(&lPaddlePos, PaddleSize.x, PaddleSize.y);
+  pong::BaseCollision *lRectColl = &lInitColl;
 
   pong::Entity rightPaddle;
   Vector2 rPaddlePos = (Vector2){screenWidth - PaddleSize.x * 2, screenHeight / 2};
-  Paddle rPaddleComp(
+  pong::Paddle rPaddleComp(
       &rPaddlePos,
       PaddleSize,
       PaddleSpeed,
       2,
       RED);
+  pong ::RectCollision rInitColl = pong::RectCollision(&rPaddlePos, PaddleSize.x, PaddleSize.y);
+  pong::BaseCollision *rRectColl = &rInitColl;
 
   pong::Entity ball;
   Vector2 ballPos = (Vector2){screenWidth / 2, screenHeight / 2};
-  Ball ballComp(
+  pong::Ball ballComp(
       &ballPos,
       ballRadius,
       ballSpeed / 2,
       ballSpeed * 2);
+  pong::BallCollision ballInitColl = pong::BallCollision(&ballPos, ballRadius);
+  pong::BaseCollision *ballColl = &ballInitColl;
 
   // Adding the components to the paddle entities
   // Note that this also automatically adds the components to their respective systems
   // Without this step, the components will not work
   leftPaddle.AddComponent(&systems, &lPaddleComp);
+  leftPaddle.AddComponent(&systems, lRectColl);
   rightPaddle.AddComponent(&systems, &rPaddleComp);
+  rightPaddle.AddComponent(&systems, rRectColl);
   ball.AddComponent(&systems, &ballComp);
+  ball.AddComponent(&systems, ballColl);
 
   // Starting tasks
   for (auto &&system : systems)

@@ -1,6 +1,4 @@
 #pragma once
-#include "RectCollision.h"
-
 float MAX_FRAMETIME = 0.01f;
 float COLL_CHECK_THRESHOLD;
 
@@ -8,6 +6,7 @@ float COLL_CHECK_THRESHOLD;
 // and detecting its collision with other objects
 namespace pong
 {
+    class RectCollision;
     class BallCollision : public pong::BaseCollision
     {
     private:
@@ -18,6 +17,9 @@ namespace pong
         ~BallCollision();
 
         void Update(std::vector<pong::Component *> *data) override;
+        void DrawDebug() override;
+        
+        virtual bool CheckCollision(Component* other);
 
         virtual bool CheckCollision(BaseCollision *other);
 
@@ -27,6 +29,6 @@ namespace pong
         // Rect-Ball collision
         virtual bool CheckCollision(RectCollision *other);
 
-        void OnCollision(Component *other);
+        void OnCollision(Component *other) override;
     };
 } // namespace pong

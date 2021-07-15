@@ -1,30 +1,27 @@
-#pragma once
-#include "src/components/Component.h"
+#include "src/Ball.h"
+#include "math.h"
 #include "src/ExtraFunctions.cpp"
+#include "src/Random.cpp"
 
 // Forward Declarations
 void XCHG(float &A, float &B);
 bool Between(float less, float value, float more);
 
-class Ball : public pong::Component
-{
-private:
-    float radius, minSpeed, maxSpeed;
-    bool canMove = true;
-    Vector2 velocity;
-    Vector2* position;
+float COLL_CHECK_THREASHOLD;
 
-public:
-    Ball(Vector2* position, float radius, float minSpeed, float maxSpeed)
+namespace pong
+{
+    Ball::Ball(Vector2 *position, float radius, float minSpeed, float maxSpeed)
     {
+        tag = tags::indep;
         this->radius = radius;
         this->minSpeed = minSpeed;
         this->maxSpeed = maxSpeed;
         this->position = position;
     }
-    ~Ball() override {}
+    Ball::~Ball() {}
 
-    void Start() override
+    void Ball::Start()
     {
         GenerateRandomVelocity(0, 2 * PI, minSpeed, maxSpeed);
         float speed = velocity.x * velocity.x + velocity.y * velocity.y;
@@ -32,7 +29,7 @@ public:
     }
 
     // angleMin and angleMax are in RADIANS
-    void GenerateRandomVelocity(float angleMin, float angleMax, float magMin, float magMax)
+    void Ball::GenerateRandomVelocity(float angleMin, float angleMax, float magMin, float magMax)
     {
         float angle = Random::GetRand(angleMin, angleMax);
         float magnitude = Random::GetRand(magMin, magMax);
@@ -41,7 +38,7 @@ public:
         velocity.y = magnitude * sin(angle);
     }
 
-    void Move()
+    void Ball::Move()
     {
         if (!canMove)
             return;
@@ -49,9 +46,16 @@ public:
         float deltaTime = GetFrameTime();
         position->x += velocity.x * deltaTime;
         position->y += velocity.y * deltaTime;
+
+        if (position->x < 0 || position->x > GetScreenWidth())
+            position->x = GetScreenWidth() / 2;
+
+        if (position->y < 0 || position->y > GetScreenHeight())
+            position->y = GetScreenHeight() / 2;
+        
     }
 
-    void Update(std::vector<pong::Component*>* data) override
+    void Ball::Update(std::vector<pong::Component *> *data)
     {
         Accelerate();
         // UpdateCollision();
@@ -61,14 +65,11 @@ public:
         Move();
     }
 
-    void Accelerate()
+    void Ball::Accelerate()
     {
         float speedScalar = 1 + 0.001 * std::min(GetFrameTime(), MAX_FRAMETIME);
         velocity = Vector2Multiply(velocity, speedScalar);
     }
-
-
-  
 
     // Could be cleaned up with a virtual method in each object child
     // void OnCollision(Object *other, Rectangle &otherRect)
@@ -146,4 +147,5 @@ public:
     // {
     //     return !CheckCollisionCircleRec({position->x, position->y - paddleLastFrameSpeed}, radius, paddleRect);
     // }
-};
+
+} // namespace pong

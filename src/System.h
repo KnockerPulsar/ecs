@@ -1,16 +1,19 @@
 #pragma once
 #include <vector>
-#include "src/Random.cpp"
-#include "src/components/Component.h"
-#include "src/components/BaseCollision.h"
-#include "src/components/BallCollision.h"
-#include "src/components/RectCollision.h"
-#include "src/components/Paddle.h"
-#include "src/components/Ball.cpp"
+#include <functional>
+#include "src/Component.h"
+#include "src/BaseCollision.h"
+#include "src/Ball.h"
+
+// TODO: Maybe compose the update function of multiple ones to make systems more flexible?
+// Update() only loops through the vector of functions and executes them
 
 class Ball;
+
 namespace pong
 {
+    class Paddle;
+
     class System
     {
     private:
@@ -19,30 +22,26 @@ namespace pong
         std::function<void(pong::System *)> updateSystem;
 
     public:
-        System()
+        System(tags compTag)
         {
-        }
+            switch (compTag)
+            {
+            case tags::indep:
+                updateSystem = &System::UpdateIndependent;
 
-        // TODO: Use enable_if and SFINAE to clean up this mess
-        System(Paddle *systemComponent)
-        {
-            updateSystem = &System::UpdateIndependent;
-        }
+                break;
+            case tags::coll:
+                updateSystem = &System::UpdateCollision;
+                break;
 
-        System(Ball *systemComponent)
-        {
-            updateSystem = &System::UpdateIndependent;
+            default:
+                break;
+            }
         }
-
-        System(pong::BaseCollision *systemComponent)
-        {
-            updateSystem = &System::UpdateCollision;
-        }
-
         ~System() {}
 
         // TODO: Use enable_if and SFINAE to make this look better
-        // Compile UpdateIndependent as Update for certain types 
+        // Compile UpdateIndependent as Update for certain types
         // And compile UpdateCollision as Update for Collision systems
         // There's probably an even better solution to this...
         void Update()
@@ -61,8 +60,11 @@ namespace pong
         }
 
         // Tests every object with all others
+        // TODO: Implement something like OnCollisionEnter(), OnCollisionStay(), OnCollisionExit()
+        // The current OnCollision implementation is close to OnCollisionStay()
         void UpdateCollision()
         {
+            UpdateIndependent();
             for (auto &&colA : systemComponents)
             {
                 for (auto &&colB : systemComponents)

@@ -1,18 +1,31 @@
 #pragma once
-#include "BaseCollision.h"
-#include "RectCollision.h"
-#include "Component.h"
+#include "src/RectCollision.h"
+#include "src/BaseCollision.h"
+#include "src/BallCollision.h"
+#include "src/Component.h"
 #include <vector>
 #include "raylib.h"
 
 namespace pong
 {
-    RectCollision::RectCollision(float w, float h) : width(w), height(h) {}
+
+    RectCollision::RectCollision(Vector2 *pos, float w, float h) : width(w), height(h)
+    {
+        position = pos;
+        tag = tags::coll;
+    }
 
     RectCollision::~RectCollision() {}
 
-    void RectCollision::Update(std::vector<pong::Component *> *data) 
+    void RectCollision::Update(std::vector<pong::Component *> *data)
     {
+        DrawDebug();
+    }
+
+    void RectCollision::DrawDebug()
+    {
+        // Increase debug rect size by 10 percent for visibility
+        DrawRectangleV(*this->position, (Vector2){this->width * 1.1, this->height * 1.1}, GREEN);
     }
 
     Rectangle RectCollision::GetRect()
@@ -20,7 +33,9 @@ namespace pong
         return (Rectangle){position->x, position->y, width, height};
     }
 
-    bool RectCollision::CheckCollision(pong::BaseCollision *other) { return other->CheckCollision(this); }
+    bool RectCollision::CheckCollision(Component *other) { return other->CheckCollision(this); }
+
+    bool RectCollision::CheckCollision(BaseCollision *other) { return other->CheckCollision(this); }
 
     // Rect-ball collision
     bool RectCollision::CheckCollision(BallCollision *other)

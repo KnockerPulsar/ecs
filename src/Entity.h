@@ -1,52 +1,48 @@
 #pragma once
-#include <map>
-#include "components/Component.h"
+#include <unordered_map>
+#include "src/Component.h"
+#include "src/Ball.h"
+#include <typeindex>
 
 namespace pong
 {
+
   class Entity
   {
   private:
-    std::map<std::string, pong::Component *> components;
+    // Stores a multimap of the entity's components by type
+    // To allow for multiple components with the same key
+    std::unordered_multimap<std::type_index, pong::Component *> typeComponents;
+
+    // Stores a multimap of the entity's components by componentID
+    // Might not be super useful right now since the only place you can access the component's id is through
+    // the component itself
+    std::unordered_map<int, Component *> idComponents;
+
+    // A map of all the game's entities, accessed by the entity's ID
+    // Definitely not thread safe
+    static std::unordered_map<int, Entity *> *entities;
 
   public:
-    Vector3 position;
-    Entity() {}
-    virtual ~Entity() {}
-    Component *GetComponenet(const std::string &compName)
-    {
-      return components.at(compName);
-    }
+    Vector2 position;
+    int entityID;
 
-    void AddComponent(std::map<std::string, pong::System *> *systems, pong::Component *component)
-    {
-      if (!component)
-        return;
+    Entity();
+    virtual ~Entity();
 
-      pong::System *system = (*systems)[typeid(*component).name()];
+    std::vector<Component *> *GetComponents(const std::type_index &type);
 
-      if (!system)
-        system = AddNewSystem(systems, component);
+    Component *GetComponent(const std::type_index &type);
 
-      system->AddComponent(component);
+    Component *GetComponent(const int &id);
 
-      components[typeid(component).name()] = component;
-    }
+    static Entity *GetEntity(const int &id);
 
-    pong::System *AddNewSystem(std::map<std::string, pong::System *> *systems, pong::Component *component)
-    {
-      pong::System *newSys; 
-
-      // TODO: Use enable_if and SFINAE to clean up this mess
-      if (Paddle *paddle = dynamic_cast<Paddle *>(component))
-        newSys = new System(paddle);
-      else if (Ball *ball = dynamic_cast<Ball *>(component))
-        newSys = new System(ball);
-      else if (BaseCollision *baseCol = dynamic_cast<BaseCollision *>(component))
-        newSys = new System(baseCol);
-
-      (*systems)[typeid(*component).name()] = newSys;
-      return newSys;
-    }
+    void AddComponent(std::unordered_map<tags, pong::System *, pong::TagsHashClass> *systems, pong::Component *component);
+    pong::System *AddNewSystem(std::unordered_map<tags, pong::System *, pong::TagsHashClass> *systems, pong::Component *component);
   };
+
 }
+
+// Have to initialize it here...
+std::unordered_map<int, pong::Entity *> *pong::Entity::entities = new std::unordered_map<int, Entity *>();
