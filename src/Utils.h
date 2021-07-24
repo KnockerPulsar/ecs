@@ -1,17 +1,23 @@
+#pragma once
+#include <chrono>
+
 namespace pong
 {
+    class Component;
+
+
     class Utils
     {
     public:
         static int GetUniqueID();
+        static bool Between(float less, float value, float more);
+        static bool BetweenEq(float less, float value, float more);
+        static void XCHG(float &A, float &B);
+
+        // https://stackoverflow.com/questions/13445688/how-to-generate-a-random-number-in-c
+        static float GetRand(float min, float max);
+        static float GetRand(float lmin, float lmax, float umin, float umax);
+
     };
 
-    // Note: to make this thread-safe, replace the first line with
-    //     static std::atomic<std::uint32_t> uid { 0 };  // <<== initialised
-    // https://stackoverflow.com/questions/39447118/thread-safe-unique-id-generation-in-c
-     int Utils::GetUniqueID()
-    {
-        static int uid = 0;
-        return uid++;
-    }
 }

@@ -62,6 +62,7 @@
 		"iostream": "cpp",
 		"mutex": "cpp",
 		"thread": "cpp",
-		"map": "cpp"
+		"map": "cpp",
+		"typeindex": "cpp"
 	}
 }

@@ -1,10 +1,5 @@
-# raylib-cpp VSCode Example Project
+# A pong clone made with raylib(-cpp) with an ECS system
+This isn't anything serious. Started as a pong clone in pure C with raylib but honestly couldn't live without C++'s OOP features. You might be confused as to why this doesn't really use raylib-cpp that much, I'm still learning the API so it'll be sometime before I fully convert to raylib-cpp.
 
-Steps to get this up and running:
-    1. Make sure Raylib is installed
-    2. Download the "include" folder of raylib-cpp and place it in the VSCode project folder
-        (https://github.com/RobLoach/raylib-cpp/tree/master/include)
-    3. Open FirstPerson.cpp, open the debug tab and press on "open a folder", select the project folder.
-
-VSCode should restart at the welcome page, open FirstPerson.cpp again and open the Debug tab.
-You should see 2 options now, "Run" and "Debug", use whatever you need, running through any of the 2 options should build a ".exe".
+# This ECS implementation is (bad word)!
+Yes, I'm not really basing this off much research, just experimenting around. I'm sure it can be much better, but one has to start from somewhere. 

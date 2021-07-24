@@ -8,7 +8,7 @@
             "name": "Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/RaylibPong",
+            "program": "${workspaceFolder}/bin/RaylibPong",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -31,7 +31,7 @@
             "linux": {
               "miDebuggerPath": "/usr/bin/gdb",
             },
-            "preLaunchTask": "clean then debug",
+            "preLaunchTask": "build debug",
           },
           {
             "name": "Run",
@@ -54,7 +54,7 @@
             "linux": {
               "miDebuggerPath": "/usr/bin/gdb"
             },
-            "preLaunchTask": "clean then build",
+            "preLaunchTask": "build release",
           }
         ]
       }

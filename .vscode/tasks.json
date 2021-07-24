@@ -7,26 +7,13 @@
             "label": "build debug",
             "type": "process",
             "command": "make",
-            "args": [
-                "PLATFORM=PLATFORM_DESKTOP",
-                "BUILD_MODE=DEBUG"
-            ],
+            "args": [],
             "windows": {
                 "command": "C:/raylib/mingw/bin/mingw32-make.exe",
-                "args": [
-                    "RAYLIB_PATH=C:/raylib/raylib",
-                    "PROJECT_NAME=${fileBasenameNoExtension}",
-                    "OBJS=${fileBasenameNoExtension}.cpp",
-                    "BUILD_MODE=DEBUG"
-                ],
+                "args": [],
             },
             "osx": {
-                "args": [
-                    "RAYLIB_PATH=<path_to_raylib>/raylib",
-                    "PROJECT_NAME=${fileBasenameNoExtension}",
-                    "OBJS=${fileBasenameNoExtension}.c",
-                    "BUILD_MODE=DEBUG"
-                ],
+                "args": [],
             },
             "group": {
                 "kind": "build",
@@ -40,16 +27,10 @@
             "label": "build release",
             "type": "process",
             "command": "make",
-            "args": [
-                "PLATFORM=PLATFORM_DESKTOP",
-            ],
+            "args": [],
             "windows": {
                 "command": "C:/raylib/mingw/bin/mingw32-make.exe",
-                "args": [
-                    "RAYLIB_PATH=C:/raylib/raylib",
-                    "PROJECT_NAME=${fileBasenameNoExtension}",
-                    "OBJS=${fileBasenameNoExtension}.cpp"
-                ],
+                "args": [],
             },
             "osx": {
                 "args": [
@@ -63,21 +44,5 @@
                 "$gcc"
             ]
         },
-        {
-            "label": "clean",
-            "type": "process",
-            "command": "make",
-            "args": [
-                "clean",
-            ]
-        },
-        {
-            "label": "clean then build",
-            "dependsOn": ["clean", "build release"]
-        },
-        {
-            "label": "clean then debug",
-            "dependsOn": ["clean", "build debug"]
-        }
     ]
 }

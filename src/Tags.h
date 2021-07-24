@@ -1,3 +1,4 @@
+#pragma once
 #include <cstddef>
 namespace pong
 {
@@ -9,7 +10,9 @@ namespace pong
     {
         null,
         indep,
-        coll
+        coll,
+        particle,
+        
     };
 
     // https://stackoverflow.com/questions/18837857/cant-use-enum-class-as-unordered-map-key
