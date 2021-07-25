@@ -13,8 +13,6 @@ namespace pong
   class Entity
   {
   private:
-
-
   public:
     raylib::Vector2 position;
     int entityID;
@@ -22,7 +20,7 @@ namespace pong
     // Might not be super useful right now since the only place you can access the component's id is through
     // the component itself
     std::unordered_map<int, Component *> idComponents;
-    
+
     // Stores a multimap of the entity's components by type
     // To allow for multiple components with the same key
     std::unordered_multimap<std::type_index, pong::Component *> typeComponents;
@@ -31,7 +29,7 @@ namespace pong
     // Definitely not thread safe
     static std::unordered_map<int, Entity *> *entities;
 
-    Entity();
+    Entity(float x, float y);
     virtual ~Entity();
 
     std::vector<Component *> *GetComponents(const std::type_index &type);
@@ -43,6 +41,7 @@ namespace pong
     static Entity *GetEntity(const int &id);
 
     void AddComponent(pong::Component *component);
+
     void RemoveComponent(int &compID);
 
     pong::System *AddNewSystem(pong::Component *component);
@@ -52,6 +51,5 @@ namespace pong
     virtual void OnCollisionExit(BaseCollision *caller, Component *other);
 
     static void PrintEntity();
-
   };
 }

@@ -11,7 +11,7 @@ namespace pong
         float width, height;
 
         RectCollision(raylib::Vector2 *pos, float w, float h);
-        RectCollision(float x, float y, float w, float h); 
+        // RectCollision(float x, float y, float w, float h); 
         ~RectCollision();
         void Update();
         void DrawDebug(raylib::Color col = raylib::Color::Green()) override;

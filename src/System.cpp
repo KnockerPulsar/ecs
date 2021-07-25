@@ -34,7 +34,9 @@ namespace pong
             break;
         }
     }
-    System::~System() {}
+    System::~System() {
+        delete root; 
+    }
 
     // TODO: Use enable_if and SFINAE to make this look better
     // Compile UpdateIndependent as Update for certain types
@@ -61,69 +63,45 @@ namespace pong
     void System::UpdateCollision()
     {
         BuildQuadTree();
-        // root->PrintDebug(0);
-        BeginBlendMode(BLEND_ALPHA);
-        root->Draw(raylib::Color(0, 228, 48, 50), raylib::Color::Red());
-        EndBlendMode();
+        UpdateIndependent(); // For debugging
 
-        // Naive collision detection, left for checking performance gains
-        // for (auto &&colA : systemComponents)
-        // {
-        //     for (auto &&colB : systemComponents)
-        //     {
-        //         // Not the same object
-        //         if (colA != colB)
-        //         {
-        //             if (colA->CheckCollision(colB))
-        //             {
-        //                 colA->OnCollision(colB);
-        //                 colB->OnCollision(colA);
-        //             }
-        //             else
-        //             {
-        //                 colA->ClearCollision(colB);
-        //                 colB->ClearCollision(colA);
-        //             }
-        //         }
-        //     }
-        // }
+        root->Draw(raylib::Color(0, 228, 48, 50), raylib::Color::Red());
 
         for (auto &&compA : systemComponents)
         {
             BaseCollision *colA = TUtils::GetTypePtr<BaseCollision>(compA);
-
-            // TODO: Shouldn't need this too!
-            if (!colA->currentNode || !colA->currentNode->objsInNode)
-                continue;
-
-            // If we're not near anything, clear the colliding list
-            if (colA->currentNode->objsInNode->size() == 1 &&
-                (*colA->currentNode->objsInNode)[0] == colA)
-                colA->collidingWith.clear();
-
-            for (auto &&colB : *colA->currentNode->objsInNode)
+            for (auto &&currentNode : colA->currentNodes)
             {
-                if (colA == colB)
-                    continue;
+                // // If we're not near anything, clear the colliding list
+                // if (currentNode->contained.size() == 1 &&
+                //     currentNode->contained[0] == colA)
+                //     {colA->collidingWith.clear();}
 
-                BallCollision *b1 = TUtils::GetTypePtr<BallCollision>(colA);
-                RectCollision *r1 = TUtils::GetTypePtr<RectCollision>(colB);
-
-                RectCollision *r2 = TUtils::GetTypePtr<RectCollision>(colA);
-                BallCollision *b2 = TUtils::GetTypePtr<BallCollision>(colB);
-
-                // BallCollision* b2 = colB->GetTypePtr<BallCollision>();
-                // RectCollision* r2 = colA->GetTypePtr<RectCollision>();
-
-                if (colA->CheckCollision(colB))
+                for (auto &&colB : currentNode->contained)
                 {
-                    colA->OnCollision(colB);
-                    colB->OnCollision(colA);
-                }
-                else
-                {
-                    colA->ClearCollision(colB);
-                    colB->ClearCollision(colA);
+                    // If we're checking an object against itself
+                    if (colA == colB)
+                        continue;
+
+                    BallCollision *b1 = TUtils::GetTypePtr<BallCollision>(colA);
+                    RectCollision *r1 = TUtils::GetTypePtr<RectCollision>(colB);
+
+                    RectCollision *r2 = TUtils::GetTypePtr<RectCollision>(colA);
+                    BallCollision *b2 = TUtils::GetTypePtr<BallCollision>(colB);
+
+                    // BallCollision* b2 = colB->GetTypePtr<BallCollision>();
+                    // RectCollision* r2 = colA->GetTypePtr<RectCollision>();
+
+                    if (colA->CheckCollision(colB))
+                    {
+                        colA->OnCollision(colB);
+                        colB->OnCollision(colA);
+                    }
+                    else
+                    {
+                        colA->ClearCollision(colB);
+                        colB->ClearCollision(colA);
+                    }
                 }
             }
         }
@@ -165,10 +143,22 @@ namespace pong
     {
         if (root)
         {
+            // delete root->collision.position;            
             delete root;
             root = nullptr;
+            for (auto &&comp : systemComponents)
+            {
+                TUtils::GetTypePtr<BaseCollision>(comp)->currentNodes.clear();
+            }
         }
-        RectCollision *rootColl = new RectCollision(0, 0, GetScreenWidth(), GetScreenHeight());
-        root = new QuadTree(rootColl, nullptr, &systemComponents);
+        raylib::Vector2 *vec = new raylib::Vector2();
+        RectCollision rootColl = RectCollision(vec, GetScreenWidth(), GetScreenHeight());
+        rootColl.entityID = 6969;
+
+        root = new QuadTree(rootColl, 2);
+        for (auto &&comp : systemComponents)
+        {
+            root->Insert(comp, 0);
+        }
     }
 } // namespace pong

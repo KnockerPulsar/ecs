@@ -88,7 +88,7 @@ namespace pong
             }
         }
 
-        // TODO: Move this to its own component
+        // TODO: Move thiss to its own component
         // void ScoreDisplay()
         // {
         //     if (playerNum == 1)
@@ -104,13 +104,13 @@ namespace pong
                 std::string info = "Ball hit ";
                 info += playerNum == 1 ? "left" : "right";
                 info += " player";
-                TraceLog(LOG_DEBUG, info.c_str());
+                // TraceLog(LOG_DEBUG, info.c_str());
             }
         }
 
         void OnCollisionExit(Component *other) override
         {
-            TraceLog(LOG_INFO, "Collision ended!");
+            // TraceLog(LOG_INFO, "Collision ended!");
         }
 
         // Vector2 hitSegPos;

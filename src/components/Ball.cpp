@@ -33,8 +33,8 @@ namespace pong
         // Generates an angle between -45 and 45 OR 135 and 225
         GenerateRandomVelocity(-PI / 4, PI / 4, minSpeed, maxSpeed);
         float speed = velocity.x * velocity.x + velocity.y * velocity.y;
-        BallCollision* bColl = TUtils::GetComponentFromEntity<BallCollision>(entityID);
-        bColl->collidingWith.clear();
+        // BallCollision* bColl = TUtils::GetComponentFromEntity<BallCollision>(entityID);
+        // bColl->collidingWith.clear();
     }
 
     // angleMin and angleMax are in RADIANS
@@ -61,15 +61,13 @@ namespace pong
             position->x > GetScreenWidth() + DeleteThreshold ||
             position->y > GetScreenHeight() + DeleteThreshold)
         {
-            TraceLog(LOG_DEBUG, std::to_string(1 / GetFrameTime()).c_str());
+            // TraceLog(LOG_DEBUG, std::to_string(1 / GetFrameTime()).c_str());
         }
     }
 
     void Ball::Update()
     {
         Accelerate();
-        // UpdateCollision();
-        // CheckCollisions(objs);
         DrawCircle(position->x, position->y, radius, RAYWHITE);
 
         Move();
@@ -96,7 +94,7 @@ namespace pong
             if (colliderPaddle)
             {
                 whichPlayer = colliderPaddle->playerNum == 1 ? "left" : "right";
-                TraceLog(LOG_DEBUG, ("Collided with the " + whichPlayer + " player").c_str());
+                // TraceLog(LOG_DEBUG, ("Collided with the " + whichPlayer + " player").c_str());
 
                 float velMag = velocity.Length();
                 float paddleMiddleY =
@@ -139,16 +137,15 @@ namespace pong
         else if (collWall)
         {
             velocity.y *= -1;
-            TraceLog(LOG_DEBUG, "Collided with a wall!");
+            // TraceLog(LOG_DEBUG, "Collided with a wall!");
         }
         else if (collNet)
         {
             Paddle *pad = TUtils::GetComponentFromEntity<Paddle>(collNet->pID);
             pad->score++;
 
-            pong::Entity *particles = new pong::Entity();
-            pong::Particle **partComps = new pong::Particle *[100];
-
+            pong::Entity *particles = new pong::Entity(position->x,position->y);
+            std::vector<Particle*> partComps(100);
             for (int i = 0; i < 100; i++)
             {
                 partComps[i] = new Particle(goalParticle, Utils::GetRand(0.01, 0.1));
@@ -160,7 +157,6 @@ namespace pong
                 partComps[i]->tint = pad->BoxColor;
                 particles->AddComponent(partComps[i]);
             }
-
             Start();
         }
     }

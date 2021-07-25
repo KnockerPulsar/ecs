@@ -15,13 +15,11 @@ namespace pong
         tag = tags::coll;
     }
 
-    RectCollision::RectCollision(float x, float y, float w, float h) : width(w), height(h)
+    RectCollision::~RectCollision()
     {
-        position = new raylib::Vector2(x, y);
-        tag = tags::coll;
+        // if (position)
+        // delete position;
     }
-
-    RectCollision::~RectCollision() {}
 
     void RectCollision::Update()
     {
@@ -30,7 +28,7 @@ namespace pong
 
     void RectCollision::DrawDebug(raylib::Color col)
     {
-        //DrawRectangle(position->x,position->y,width,height, col);
+        DrawRectangle(position->x,position->y,width,height, col);
         DrawRectangleLines(position->x, position->y, width, height, col);
     }
 

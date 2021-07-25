@@ -2,6 +2,7 @@
 #include <vector>
 #include "components/BaseCollision.h"
 #include "components/RectCollision.h"
+#define NUM_CHILDREN 4
 
 // Description:
 /*
@@ -24,21 +25,29 @@ namespace pong
     class QuadTree
     {
     private:
-        // 0 top left, 1 top right, 2 bot left, 3 bot right
-        int numChildren = 0;
-        static const int maxChildren = 4;
+
         static int currQuads;
         int myNum = 0;
-        RectCollision *thisColl;
-        QuadTree *parent = nullptr;
-        std::vector<QuadTree *> children = std::vector<QuadTree *>(0);
+
 
     public:
-        std::vector<Component *> *objsInNode = nullptr;
+        // 0 top left, 1 top right, 2 bot left, 3 bot right
+        std::vector<QuadTree *> children{};
+        std::vector<Component *> contained;
+        const int capacity;
+        RectCollision collision;
+        bool subdivided = false;
 
-        QuadTree(RectCollision *, QuadTree *, std::vector<Component *> *, int depth = 0);
+        QuadTree(RectCollision &, int);
         ~QuadTree();
+        void Insert(Component *, int);
+        void Subdivide(std::vector<Component*>&);
+
+        // Given a certain primitive, should get all colliders inside it
+        // Not needed right now
+        void Query(BaseCollision *);  
+
         void Draw(raylib::Color, raylib::Color);
-        void PrintDebug(int );
+        void PrintDebug(int);
     };
 }

@@ -28,7 +28,7 @@ namespace pong
         }
         else
         {
-            TraceLog(LOG_DEBUG, "Collision staying...");
+            // TraceLog(LOG_DEBUG, "Collision staying...");
         }
     }
 

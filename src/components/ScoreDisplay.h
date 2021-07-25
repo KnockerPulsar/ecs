@@ -47,8 +47,7 @@ namespace pong
             // Have to do this instead of using pointers
             // Since pointers might introduce issues if we want to save and
             // load from disk
-            Entity *entt = Entity::GetEntity(entityID);
-            Paddle *pad = dynamic_cast<Paddle *>(entt->GetComponent(typeid(Paddle)));
+            Paddle *pad = TUtils::GetComponentFromEntity<Paddle>(entityID);
             DrawText(std::to_string(pad->score).c_str(), displayPos.x, displayPos.y, fSize, color);
         }
     };

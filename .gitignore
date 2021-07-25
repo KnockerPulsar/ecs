@@ -3,3 +3,7 @@
 *.o
 bin/*
 old.zip
+valgrind-out.txt
+callgrind.out.142205
+callgrind.out.152431
+callgrind.out.166250

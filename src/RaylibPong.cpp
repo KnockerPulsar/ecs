@@ -33,6 +33,12 @@
 // or with a loop in the main loop, just needs a reference to the queue, we add to it and it executes
 // Should have a priority queue of functions sorted descendingly by time remaining
 
+// TODO: Instead of remaking the whole quadtree for a mostly static scene, we can mark each collider as "static" or
+// "dynamic", then we only need to rebuild the nodes for dynamic colliders
+
+// TODO: Code clean up
+
+// TODO: More TODO's
 int main()
 {
   int screenWidth = 1280, screenHeight = 720;
@@ -50,26 +56,25 @@ int main()
   // Left and right paddle inits
   // ============================================================================
   // Entity creation
-  pong::Entity lPaddle, rPaddle, ball, tWall, bWall, lNet, rNet;
+  float offset = 10;
+  pong::Entity lPaddle(PaddleSize.x, screenHeight / 2 - PaddleSize.y / 2),
+      rPaddle(screenWidth - PaddleSize.x * 2, screenHeight / 2 - PaddleSize.y / 2),
+      ball((float)(screenWidth / 2), (float)(screenHeight / 2)),
+      tWall(0, offset), 
+      bWall(0, screenHeight - offset),
+      lNet(offset, 0),
+      rNet((float)(screenWidth - offset), 0);
 
   // Positions, TODO: Maybe move this into the entity? Since most components follow their entity
   // Can have seperate positions for components that require that
-  float offset = 5;
-  raylib::Vector2 lPaddlePos = raylib::Vector2(PaddleSize.x, screenHeight / 2 - PaddleSize.y / 2);
-  raylib::Vector2 rPaddlePos = raylib::Vector2{screenWidth - PaddleSize.x * 2, screenHeight / 2 - PaddleSize.y / 2};
-  raylib::Vector2 ballPos = raylib::Vector2{(float)(screenWidth / 2), (float)(screenHeight / 2)};
-  raylib::Vector2 tWallPos = raylib::Vector2(0, offset);
-  raylib::Vector2 bWallPos = raylib::Vector2(0, screenHeight - offset);
-  raylib::Vector2 lNetPos = {offset, 0};
-  raylib::Vector2 rNetPos = {(float)(screenWidth - offset), 0};
 
   // Resources
   raylib::Texture2D wTri("data/particle_triangle_white.png");
 
   // Main logic components
-  pong::Paddle lPaddleComp(&lPaddlePos, PaddleSize, PaddleSpeed, 1, BLUE);
-  pong::Paddle rPaddleComp(&rPaddlePos, PaddleSize, PaddleSpeed, 2, RED);
-  pong::Ball ballComp(&wTri, &ballPos, ballRadius, ballSpeed, ballSpeed);
+  pong::Paddle lPaddleComp(&lPaddle.position, PaddleSize, PaddleSpeed, 1, BLUE);
+  pong::Paddle rPaddleComp(&rPaddle.position, PaddleSize, PaddleSpeed, 2, RED);
+  pong::Ball ballComp(&wTri, &ball.position, ballRadius, ballSpeed, ballSpeed);
   pong::Wall tWallComp, bWallComp;
   pong::ScoreDisplay lScore(scoreSize, &win), rScore(scoreSize, &win);
 
@@ -77,15 +82,15 @@ int main()
   // TODO: Make the collisions a bit taller than the paddles to account
   // for corner collisions
   pong::RectCollision lInitColl = pong::RectCollision(
-      &lPaddlePos, PaddleSize.x / 2, PaddleSize.y);
+      &lPaddle.position, PaddleSize.x / 2, PaddleSize.y);
   pong ::RectCollision rInitColl = pong::RectCollision(
-      &rPaddlePos, PaddleSize.x / 2, PaddleSize.y);
-  pong::BallCollision ballInitColl = pong::BallCollision(&ballPos, ballRadius);
+      &rPaddle.position, PaddleSize.x / 2, PaddleSize.y);
+  pong::BallCollision ballInitColl = pong::BallCollision(&ball.position, ballRadius);
 
-  pong::RectCollision tWallInitColl(&tWallPos, screenWidth, 5);
-  pong::RectCollision bWallInitColl(&bWallPos, screenWidth, 5);
-  pong::RectCollision lNetInitColl(&lNetPos, 5, screenHeight);
-  pong::RectCollision rNetInitColl(&rNetPos, 5, screenHeight);
+  pong::RectCollision tWallInitColl(&tWall.position, screenWidth, 5);
+  pong::RectCollision bWallInitColl(&bWall.position, screenWidth, 5);
+  pong::RectCollision lNetInitColl(&lNet.position, 5, screenHeight);
+  pong::RectCollision rNetInitColl(&rNet.position, 5, screenHeight);
 
   // Upcasting all collisions to their parent components
   pong::BaseCollision *lRectColl = &lInitColl;
@@ -97,7 +102,7 @@ int main()
   pong::BaseCollision *rNetColl = &rNetInitColl;
 
   pong::Net lNetComp(rPaddle.entityID), rNetComp(lPaddle.entityID);
-  pong::BallTrail bTrail(ball.entityID, 100, wTri, &ballPos, lPaddleComp.BoxColor, rPaddleComp.BoxColor);
+  pong::BallTrail bTrail(ball.entityID, 100, wTri, &ball.position, lPaddleComp.BoxColor, rPaddleComp.BoxColor);
 
   // Adding the components to the paddle entities
   // Note that this also automatically adds the components to their respective systems
@@ -143,6 +148,9 @@ int main()
     }
     win.EndDrawing();
   }
+
+  delete pong::Entity::entities;
+  // win.Close(); // Causes an excpetion with the texture for some reason
 
   return 0;
 }

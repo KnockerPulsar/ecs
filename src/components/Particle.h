@@ -31,7 +31,7 @@ namespace pong
         ~Particle()
         {
             std::string str = "Deleted particle with compID: " + std::to_string(componentID);
-            TraceLog(LOG_DEBUG, str.c_str());
+            // TraceLog(LOG_DEBUG, str.c_str());
         }
 
         void Update() override
@@ -63,8 +63,18 @@ namespace pong
             {
                 if (!owned)
                 {
-                    Entity::GetEntity(entityID)->RemoveComponent(componentID);
-                    delete this;
+                    Entity *entt = Entity::GetEntity(entityID);
+                    entt->RemoveComponent(componentID);
+
+                    // If last particle, delete the owning entity
+                    if (entt->idComponents.size() == 0)
+                    {
+                        delete entt;
+                        Entity::entities->erase(entityID);
+                    }
+                    // Otherwise, just delete yourself
+                    else
+                        delete this;
                 }
                 else
                 {

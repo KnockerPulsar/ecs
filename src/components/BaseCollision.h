@@ -17,8 +17,8 @@ namespace pong
     public:
         Vector2 *position; // Just in case
         bool colliding = false;
-        QuadTree *currentNode = nullptr;
-        std::unordered_map<int, Component *> collidingWith;
+        std::unordered_map<int, Component *> collidingWith{};
+        std::vector<QuadTree*> currentNodes{};
 
         BaseCollision(/* args */);
         virtual ~BaseCollision();

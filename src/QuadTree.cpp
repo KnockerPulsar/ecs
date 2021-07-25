@@ -3,6 +3,7 @@
 #include <iostream>
 #include "TUtils.h"
 #define MAX_DEPTH 5
+
 namespace pong
 {
     int QuadTree::currQuads = 0;
@@ -47,142 +48,78 @@ namespace pong
 
     // Every quadtree node should check which collisions in the given vector are inside it
     // TODO: Don't store collisions if you have any children
-    QuadTree::QuadTree(RectCollision *myColl, QuadTree *par, std::vector<Component *> *colliders, int depth) : thisColl(myColl)
+    QuadTree::QuadTree(RectCollision &passedColl, int cap) : capacity(cap), collision(passedColl)
     {
-        parent = par;
-        if (!colliders)
-        {
-            TraceLog(LOG_FATAL, "QUADTREE GIVEN NO COLLIDERS");
-        }
-        if (!par)
-        {
-            for (auto &&coll : *colliders)
-            {
-                TUtils::GetTypePtr<BaseCollision>(coll)->currentNode = nullptr;
-            }
-        }
-        // If we've reached recursion limit
-        if (depth == MAX_DEPTH)
-        {
-            objsInNode = colliders;
-            for (auto &&coll : *objsInNode)
-                dynamic_cast<BaseCollision *>(coll)->currentNode = this;
+        children = std::vector<QuadTree *>(NUM_CHILDREN, nullptr);
+    }
 
-            delete parent->objsInNode;
-            parent->objsInNode = nullptr;
+    void QuadTree::Insert(Component *comp, int depth)
+    {
+        BallCollision *ball = TUtils::GetTypePtr<BallCollision>(comp);
+        if (!collision.CheckCollision(comp))
+            return;
 
-            if (!colliders)
-            {
-                TraceLog(LOG_FATAL, "QUADTREE GIVEN NO COLLIDERS");
-            }
+        if (contained.size() < capacity && !subdivided || depth == MAX_DEPTH)
+        {
+            contained.push_back(comp);
+            TUtils::GetTypePtr<BaseCollision>(comp)->currentNodes.push_back(this);
             myNum = currQuads;
             currQuads++;
             return;
         }
 
-        std::vector<RectCollision *> *childrenRects = new std::vector<RectCollision *>(QuadTree::maxChildren);
-        std::vector<std::vector<Component *> *> *childrenColls = new std::vector<std::vector<Component *> *>(QuadTree::maxChildren);
-
-        for (int i = 0; i < childrenRects->size(); i++)
+        if (!subdivided)
         {
-            RectCollision *currChildRect = (*childrenRects)[i];
-            std::vector<Component *> *currChildColliders = (*childrenColls)[i];
-            currChildColliders = new std::vector<Component *>();
+            Subdivide(contained);
+            contained.clear();
+        }
 
-            // Create child rectangle
-            auto [x, y, w, h] = GetChildCoords(myColl, i);
-            currChildRect = new RectCollision(x, y, w, h);
+        for (auto &&child : children)
+        {
+            child->Insert(comp, depth + 1);
+        }
+    }
 
-            // Check for colliders
-            for (auto &&coll : *colliders)
+    void QuadTree::Subdivide(std::vector<Component *> &cont)
+    {
+        subdivided = true;
+        for (int i = 0; i < NUM_CHILDREN; i++)
+        {
+            auto [x, y, w, h] = GetChildCoords(&collision, i);
+            raylib::Vector2 *vec = new raylib::Vector2(x, y);
+            RectCollision childColl = RectCollision(vec, w, h);
+            childColl.entityID = 69;
+            children[i] = new QuadTree(childColl, capacity);
+            for (auto &&con : cont)
             {
-                BaseCollision *bc = dynamic_cast<BaseCollision *>(coll);
-                if (currChildRect->CheckCollision(coll))
-                {
-                    // Add to the list, set the pointer
-                    currChildColliders->push_back(coll);
-                    (dynamic_cast<BaseCollision *>(coll))->currentNode = this;
-                }
-            }
-
-            // If the current child is colliding with something, recurse
-            if (currChildColliders->size() > 0)
-            {
-                QuadTree *child = new QuadTree(currChildRect, this, currChildColliders, depth + 1);
-                children.push_back(child);
-                numChildren++;
-            }
-            // Otherwise, free the memory we allocated for this child
-            else
-            {
-                delete currChildColliders;
-                delete currChildRect;
+                children[i]->Insert(con, MAX_DEPTH);
             }
         }
     }
 
     void QuadTree::Draw(raylib::Color quadColor, raylib::Color collColor)
     {
-
-        if (numChildren == 0)
-        {
-            DrawTextRec(raylib::Font(), std::to_string(myNum).c_str(), thisColl->GetRect(), 20, 1, true, quadColor);
-
-            thisColl->DrawDebug(quadColor);
-            // TODO: I shouldn't really need this
-            // A quad with no objects should NOT exist
-            if (objsInNode)
-                for (auto &&coll : *objsInNode)
-                {
-                    dynamic_cast<BaseCollision *>(coll)->DrawDebug(collColor);
-                    // coll->DrawDebug(collColor);
-                }
-        }
-
-        for (auto &&child : children)
-        {
-            if (child)
+        if (subdivided)
+            for (auto &&child : children)
+            {
                 child->Draw(quadColor, collColor);
+            }
+        else
+        {
+            if (contained.size() != 0)
+            {
+                DrawTextRec(raylib::Font(), std::to_string(myNum).c_str(), collision.GetRect(), 20, 1, true, quadColor);
+                collision.DrawDebug(quadColor);
+            }
         }
     }
 
     QuadTree::~QuadTree()
     {
+
         for (auto &&child : children)
-        {
-            if (child)
-            {
-                delete child;
-                child = nullptr;
-            }
-        }
-        // To avoid nuking systemComponents when freeing the root node
-        if (objsInNode && parent)
-        {
-            delete objsInNode;
-            objsInNode = nullptr;
-        }
-        if (thisColl)
-            delete thisColl;
-        thisColl = nullptr;
+            delete child;
         currQuads = 0;
-    }
-
-    void QuadTree::PrintDebug(int depth)
-    {
-        std::string p;
-
-        for (int i = 0; i < depth; i++)
-            p += '\t';
-
-        p += std::to_string(myNum) + '\n';
-
-        for (int i = 0; i < depth + 1; i++)
-            p += '\t';
-
-        std::cout << p;
-
-        for (auto &&child : children)
-            child->PrintDebug(++depth);
+        delete collision.position;
     }
 }

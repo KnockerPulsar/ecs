@@ -13,16 +13,20 @@ namespace pong
     // Have to initialize it here...
     std::unordered_map<int, Entity *> *Entity::entities = new std::unordered_map<int, Entity *>();
 
-    Entity::Entity()
+    Entity::Entity(float x, float y)
     {
         entityID = Utils::GetUniqueID();
+        position.x = x;
+        position.y = y;
 
-        if (!Entity::entities)
-            Entity::entities = new std::unordered_map<int, Entity *>();
+            if (!Entity::entities)
+                Entity::entities = new std::unordered_map<int, Entity *>();
 
         (*Entity::entities)[entityID] = this;
     }
-    Entity::~Entity() {}
+    Entity::~Entity() {
+
+    }
 
     std::vector<Component *> *Entity::GetComponents(const std::type_index &type)
     {
@@ -91,13 +95,14 @@ namespace pong
     void Entity::RemoveComponent(int &compID)
     {
         auto found = idComponents.find(compID);
-        if(found == idComponents.end()) return;
+        if (found == idComponents.end())
+            return;
 
         Component *comp = found->second;
         typeComponents.erase(typeid(*comp));
         idComponents.erase(found);
         System::systems[comp->tag]->RemoveComponent(comp);
-    }
+        }
 
     pong::System *Entity::AddNewSystem(pong::Component *component)
     {
@@ -141,6 +146,6 @@ namespace pong
                 str += "\t Component: " + std::to_string(comp.second->componentID) + '\n';
             }
         }
-        TraceLog(LOG_DEBUG, str.c_str());
+        // // TraceLog(LOG_DEBUG, str.c_str());
     }
 }

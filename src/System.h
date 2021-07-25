@@ -7,6 +7,7 @@
 #include "components/BaseCollision.h"
 #include "QuadTree.h"
 
+
 // TODO: Maybe compose the update function of multiple ones to make systems more flexible?
 // Update() only loops through the vector of functions and executes them
 
@@ -19,14 +20,14 @@ namespace pong
     class System
     {
     private:
-
     public:
+        static std::unordered_map<pong::tags, pong::System *, pong::TagsHashClass> systems;
         std::vector<Component *> systemComponents;
+
         // https://stackoverflow.com/questions/43944112/c-function-pointer-assignment-cannot-convert-types-inside-a-class
         std::function<void(System *)> updateSystem;
-        static std::unordered_map<pong::tags, pong::System *, pong::TagsHashClass> systems;
+
         QuadTree* root = nullptr;
-        
 
         System(tags compTag);
         ~System();
@@ -50,6 +51,8 @@ namespace pong
         void Start();
         void AddComponent(Component *component);
         void RemoveComponent(Component *comp);
+
         void BuildQuadTree();
     };
+
 } // namespace pong
