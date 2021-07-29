@@ -1,7 +1,8 @@
-#include "../vendor/raylib-cpp/raylib-cpp.hpp"
+#include "../include/raylib-cpp.hpp"
 #include <vector>
 #include "components/BaseCollision.h"
 #include "components/RectCollision.h"
+
 #define NUM_CHILDREN 4
 
 // Description:

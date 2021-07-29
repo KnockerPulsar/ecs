@@ -4,6 +4,8 @@
 namespace pong
 {
     class Component;
+
+    // Template/Type Utilities
     namespace TUtils
     {
         template <typename T>
@@ -25,7 +27,6 @@ namespace pong
         }
 
         template <typename T>
-        
         static T *GetComponentFromEntity(const int &eID)
         {
             Entity *entt = Entity::GetEntity(eID);

@@ -5,8 +5,6 @@
 #include "components/Particle.h"
 #include "TUtils.h"
 
-// TODO: Maybe compose the update function of multiple ones to make systems more flexible?
-// Update() only loops through the vector of functions and executes them
 #include "System.h"
 
 namespace pong
@@ -34,8 +32,11 @@ namespace pong
             break;
         }
     }
-    System::~System() {
-        delete root; 
+
+    System::~System()
+    {
+        if (root)
+            delete root;
     }
 
     // TODO: Use enable_if and SFINAE to make this look better
@@ -53,7 +54,8 @@ namespace pong
     {
         for (auto &&comp : systemComponents)
         {
-            comp->Update();
+            if (comp->enabled)
+                comp->Update();
         }
     }
 
@@ -62,13 +64,63 @@ namespace pong
     // Might require moving velocity and collision detection together?
     void System::UpdateCollision()
     {
-        BuildQuadTree();
-        UpdateIndependent(); // For debugging
+        UpdateIndependent(); // For debugging, shows colliders
 
+        // NaiveCollision();
+        QuadTreeCollision();
+    }
+
+    void System::UpdateBlendedParticles()
+    {
+        BeginBlendMode(BLEND_ALPHA);
+
+        // For some reason, putting a forrange loop here causes
+        // the system to try and execute Update() on a component
+        // does not exist?
+        for (int i = 0; i < systemComponents.size(); i++)
+        {
+            if (systemComponents[i]->enabled)
+                systemComponents[i]->Update();
+        }
+
+        EndBlendMode();
+    }
+
+    void System::NaiveCollision()
+    {
+        for (auto &&colA : systemComponents)
+        {
+            if (!colA->enabled)
+                return;
+            for (auto &&colB : systemComponents)
+            {
+                if (colA != colB && colB->enabled)
+                {
+                    if (colA->CheckCollision(colB))
+                    {
+                        colA->OnCollision(colB);
+                        colB->OnCollision(colA);
+                    }
+                    else
+                    {
+                        colA->ClearCollision(colB);
+                        colB->ClearCollision(colA);
+                    }
+                }
+            }
+        }
+    }
+
+    void System::QuadTreeCollision()
+    {
+        BuildQuadTree();
         root->Draw(raylib::Color(0, 228, 48, 50), raylib::Color::Red());
 
         for (auto &&compA : systemComponents)
         {
+            if (!compA->enabled)
+                return;
+
             BaseCollision *colA = TUtils::GetTypePtr<BaseCollision>(compA);
             for (auto &&currentNode : colA->currentNodes)
             {
@@ -79,18 +131,11 @@ namespace pong
 
                 for (auto &&colB : currentNode->contained)
                 {
+                    if (!colB->enabled)
+                        return;
                     // If we're checking an object against itself
                     if (colA == colB)
                         continue;
-
-                    BallCollision *b1 = TUtils::GetTypePtr<BallCollision>(colA);
-                    RectCollision *r1 = TUtils::GetTypePtr<RectCollision>(colB);
-
-                    RectCollision *r2 = TUtils::GetTypePtr<RectCollision>(colA);
-                    BallCollision *b2 = TUtils::GetTypePtr<BallCollision>(colB);
-
-                    // BallCollision* b2 = colB->GetTypePtr<BallCollision>();
-                    // RectCollision* r2 = colA->GetTypePtr<RectCollision>();
 
                     if (colA->CheckCollision(colB))
                     {
@@ -106,17 +151,6 @@ namespace pong
             }
         }
     }
-    void System::UpdateBlendedParticles()
-    {
-        BeginBlendMode(BLEND_ALPHA);
-        for (int i = 0; i < systemComponents.size(); i++)
-        {
-            Component *comp = systemComponents[i];
-            comp->Update();
-        }
-
-        EndBlendMode();
-    }
 
     void System::Start()
     {
@@ -125,11 +159,13 @@ namespace pong
             comp->Start();
         }
     }
+
     void System::AddComponent(Component *component)
     {
         // Might be useful for initializations on add or something
         systemComponents.push_back(component);
     }
+
     void System::RemoveComponent(Component *comp)
     {
         auto it = std::find(systemComponents.begin(), systemComponents.end(), comp);
@@ -139,11 +175,26 @@ namespace pong
             TraceLog(LOG_DEBUG, ("Shouldn't be here! " + std::to_string(comp->componentID)).c_str());
     }
 
+    void System::AddComponentIndep(Component *comp)
+    {
+        if (!comp)
+            return;
+        systems[comp->tag]->AddComponent(comp);
+    }
+
+    void System::RemoveComponentIndep(Component *comp)
+    {
+        if (!comp)
+            return;
+
+        systems[comp->tag]->RemoveComponent(comp);
+    }
+
     void System::BuildQuadTree()
     {
         if (root)
         {
-            // delete root->collision.position;            
+            // delete root->collision.position;
             delete root;
             root = nullptr;
             for (auto &&comp : systemComponents)
@@ -152,7 +203,9 @@ namespace pong
             }
         }
         raylib::Vector2 *vec = new raylib::Vector2();
-        RectCollision rootColl = RectCollision(vec, GetScreenWidth(), GetScreenHeight());
+        RectCollision rootColl = RectCollision(GetScreenWidth(), GetScreenHeight());
+        rootColl.position = vec;
+
         rootColl.entityID = 6969;
 
         root = new QuadTree(rootColl, 2);

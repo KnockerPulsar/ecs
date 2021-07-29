@@ -2,10 +2,7 @@
 #include <cstddef>
 namespace pong
 {
-    // For use with system internals, because I'm lazy and don't want to
-    // use templates
-    // I think bit flags might be better if I want to have hybrid systems
-    // with multiple update functions
+    // For use with system internals, because I'm lazy and can't use templates
     enum tags
     {
         null,

@@ -1,5 +1,5 @@
 #pragma once
-#include "../vendor/raylib-cpp/raylib-cpp.hpp"
+#include "../include/raylib-cpp.hpp"
 #include "Tags.h"
 #include <unordered_map>
 #include <typeindex>
@@ -16,6 +16,7 @@ namespace pong
   public:
     raylib::Vector2 position;
     int entityID;
+
     // Stores a multimap of the entity's components by componentID
     // Might not be super useful right now since the only place you can access the component's id is through
     // the component itself
@@ -29,8 +30,10 @@ namespace pong
     // Definitely not thread safe
     static std::unordered_map<int, Entity *> *entities;
 
+    // Constructor with 2D coordinates
     Entity(float x, float y);
-    virtual ~Entity();
+
+    ~Entity();
 
     std::vector<Component *> *GetComponents(const std::type_index &type);
 
@@ -46,9 +49,14 @@ namespace pong
 
     pong::System *AddNewSystem(pong::Component *component);
 
-    virtual void OnCollisionEnter(BaseCollision *caller, Component *other);
+    // These three functions are almost the same, there's probably a cleaner way to do this
+    void OnCollisionEnter(BaseCollision *caller, Component *other);
+    void OnCollisionStay(BaseCollision *caller, Component *other);
+    void OnCollisionExit(BaseCollision *caller, Component *other);
 
-    virtual void OnCollisionExit(BaseCollision *caller, Component *other);
+    void EnableDisableAll(bool enable);
+
+    void EnableDisableComponent(int &compID, bool enable);
 
     static void PrintEntity();
   };

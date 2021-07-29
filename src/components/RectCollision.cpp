@@ -4,31 +4,22 @@
 #include "Component.h"
 #include <vector>
 #include "raylib.h"
-#include "../../vendor/raylib-cpp/raylib-cpp.hpp"
+#include "../../include/raylib-cpp.hpp"
 
 namespace pong
 {
 
-    RectCollision::RectCollision(raylib::Vector2 *pos, float w, float h) : width(w), height(h)
-    {
-        position = pos;
-        tag = tags::coll;
-    }
+    RectCollision::RectCollision(float w, float h) : width(w), height(h) {}
 
-    RectCollision::~RectCollision()
-    {
-        // if (position)
-        // delete position;
-    }
+    RectCollision::~RectCollision() {}
 
-    void RectCollision::Update()
-    {
-        DrawDebug();
-    }
+    void RectCollision::Update() { DrawDebug(); }
+
+    void RectCollision::Start() { position = &GetEntity()->position; }
 
     void RectCollision::DrawDebug(raylib::Color col)
     {
-        DrawRectangle(position->x,position->y,width,height, col);
+        DrawRectangle(position->x, position->y, width, height, col);
         DrawRectangleLines(position->x, position->y, width, height, col);
     }
 
@@ -56,7 +47,7 @@ namespace pong
 
     bool RectCollision::IsNotOnScreen()
     {
-        return !CheckCollisionRecs(this->GetRect(), raylib::Rectangle(0, 0, GetScreenWidth(), GetScreenHeight()));
+        return CheckCollisionRecs(this->GetRect(), raylib::Rectangle(0, 0, GetScreenWidth(), GetScreenHeight()));
     }
 
 } // namespace pong

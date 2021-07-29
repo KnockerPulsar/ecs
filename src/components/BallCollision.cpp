@@ -2,20 +2,15 @@
 #include <vector>
 #include "raylib.h"
 #include "Component.h"
+#include "../Entity.h"
 #include "RectCollision.h"
 #include <iostream>
-#include "../../vendor/raylib-cpp/raylib-cpp.hpp"
+#include "../../include/raylib-cpp.hpp"
 
-// Responsible for maintaining the ball's collision
-// and detecting its collision with other objects
 namespace pong
 {
-
-    BallCollision::BallCollision(Vector2 *center, float radius) : radius(radius)
-    {
-        this->position = center;
-        tag = tags::coll;
-    }
+    // No need to set the tag since it gets set in the BaseCollision ctor
+    BallCollision::BallCollision(float radius) : radius(radius) {}
     BallCollision::~BallCollision() {}
 
     void BallCollision::Update() { DrawDebug(); }

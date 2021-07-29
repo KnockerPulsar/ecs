@@ -7,7 +7,7 @@
             "label": "build debug",
             "type": "process",
             "command": "make",
-            "args": [],
+            "args": ["build"],
             "windows": {
                 "command": "C:/raylib/mingw/bin/mingw32-make.exe",
                 "args": [],
@@ -27,7 +27,7 @@
             "label": "build release",
             "type": "process",
             "command": "make",
-            "args": [],
+            "args": ["build"],
             "windows": {
                 "command": "C:/raylib/mingw/bin/mingw32-make.exe",
                 "args": [],

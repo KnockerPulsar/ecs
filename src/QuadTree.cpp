@@ -2,7 +2,8 @@
 #include <vector>
 #include <iostream>
 #include "TUtils.h"
-#define MAX_DEPTH 5
+
+#define MAX_DEPTH 4
 
 namespace pong
 {
@@ -47,7 +48,6 @@ namespace pong
     }
 
     // Every quadtree node should check which collisions in the given vector are inside it
-    // TODO: Don't store collisions if you have any children
     QuadTree::QuadTree(RectCollision &passedColl, int cap) : capacity(cap), collision(passedColl)
     {
         children = std::vector<QuadTree *>(NUM_CHILDREN, nullptr);
@@ -87,7 +87,9 @@ namespace pong
         {
             auto [x, y, w, h] = GetChildCoords(&collision, i);
             raylib::Vector2 *vec = new raylib::Vector2(x, y);
-            RectCollision childColl = RectCollision(vec, w, h);
+            RectCollision childColl = RectCollision(w, h);
+            childColl.position = vec;
+
             childColl.entityID = 69;
             children[i] = new QuadTree(childColl, capacity);
             for (auto &&con : cont)

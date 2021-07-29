@@ -47,4 +47,9 @@ namespace pong
             return r;
     }
 
+    std::tuple<int, int> Utils::CenterText(std::string str, int posX, int posY, float fontSize)
+    {
+        return {posX - str.length() * fontSize / 4,
+                posY - fontSize / 4};
+    }
 }

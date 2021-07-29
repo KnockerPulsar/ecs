@@ -27,7 +27,7 @@ install(FILES
     Ray.hpp
     RayHitInfo.hpp
     raylib-cpp-utils.hpp
-    ../include/raylib-cpp.hpp
+    raylib-cpp.hpp
     raylib.hpp
     raymath.hpp
     Rectangle.hpp

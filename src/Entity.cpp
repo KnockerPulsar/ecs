@@ -19,14 +19,12 @@ namespace pong
         position.x = x;
         position.y = y;
 
-            if (!Entity::entities)
-                Entity::entities = new std::unordered_map<int, Entity *>();
+        if (!Entity::entities)
+            Entity::entities = new std::unordered_map<int, Entity *>();
 
         (*Entity::entities)[entityID] = this;
     }
-    Entity::~Entity() {
-
-    }
+    Entity::~Entity() { TraceLog(LOG_DEBUG, "Entity destroyed"); }
 
     std::vector<Component *> *Entity::GetComponents(const std::type_index &type)
     {
@@ -35,7 +33,6 @@ namespace pong
 
         std::pair<it, it> range = typeComponents.equal_range(type);
 
-        // TODO: Make sure that iter.first == iter.second when there are no components with the specified tag
         if (range.first != range.second)
         {
             comps = new std::vector<Component *>();
@@ -91,7 +88,6 @@ namespace pong
         idComponents[component->componentID] = component;
     }
 
-    //  TODO: Check why it seg faults here
     void Entity::RemoveComponent(int &compID)
     {
         auto found = idComponents.find(compID);
@@ -102,20 +98,18 @@ namespace pong
         typeComponents.erase(typeid(*comp));
         idComponents.erase(found);
         System::systems[comp->tag]->RemoveComponent(comp);
-        }
+    }
 
     pong::System *Entity::AddNewSystem(pong::Component *component)
     {
         pong::System *newSys;
 
-        // TODO: Use enable_if and SFINAE to clean up this mess
         newSys = new System(component->tag);
 
         System::systems[component->tag] = newSys;
         return newSys;
     }
 
-    // TODO: Maybe use function pointers to make this less repitive?
     void Entity::OnCollisionEnter(BaseCollision *caller, Component *other)
     {
         for (auto &&comp : idComponents)
@@ -124,6 +118,16 @@ namespace pong
                 comp.second->OnCollisionEnter(other);
         }
     }
+
+    void Entity::OnCollisionStay(BaseCollision *caller, Component *other)
+    {
+        for (auto &&comp : idComponents)
+        {
+            if (comp.second != caller)
+                comp.second->OnCollisionStay(other);
+        }
+    }
+
     void Entity::OnCollisionExit(BaseCollision *caller, Component *other)
     {
         for (auto &&comp : idComponents)
@@ -132,6 +136,21 @@ namespace pong
                 comp.second->OnCollisionExit(other);
         }
     }
+
+    void Entity::EnableDisableAll(bool enable)
+    {
+        for (auto &&comp : idComponents)
+        {
+            comp.second->enabled = enable;
+        }
+    }
+
+    void Entity::EnableDisableComponent(int &compID, bool enable)
+    {
+        if (idComponents.find(compID) != idComponents.end())
+            idComponents[compID]->enabled = enable;
+    }
+
     void Entity::PrintEntity()
     {
 

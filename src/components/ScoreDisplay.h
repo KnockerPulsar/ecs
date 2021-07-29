@@ -1,5 +1,5 @@
 #include "Component.h"
-#include "../../vendor/raylib-cpp/raylib-cpp.hpp"
+#include "../../include/raylib-cpp.hpp"
 #include "../Entity.h"
 #include "Paddle.h"
 #include "../TUtils.h"
@@ -9,45 +9,41 @@ namespace pong
     class ScoreDisplay : public Component
     {
     private:
-        raylib::Vector2 displayPos;
-        raylib::Color color;
-        raylib::Window *win;
-        int fSize;
+        raylib::Vector2 displayPos; // Where to display the score
+        raylib::Color color;        // Font color
+        int fSize;                  // Font size
+        Paddle *pad;                // To cache the paddle pointer on startup
 
     public:
-        ScoreDisplay(int fontSize, raylib::Window *w)
+        ScoreDisplay(int fontSize)
         {
             fSize = fontSize;
             tag = tags::indep;
-            win = w;
         }
+
         ~ScoreDisplay() {}
 
         void Start() override
         {
-            Paddle *pad = TUtils::GetComponentFromEntity<Paddle>(entityID);
+            pad = TUtils::GetComponentFromEntity<Paddle>(entityID);
 
-            displayPos.y = win->GetHeight() * 0.2f;
+            displayPos.y = GetScreenHeight() * 0.2f;
             color = pad->BoxColor;
 
             // Left player
             if (pad->playerNum == 1)
             {
-                displayPos.x = win->GetWidth() / 4;
+                displayPos.x = GetScreenWidth() / 4;
             }
             // Right player
             else
             {
-                displayPos.x = win->GetWidth() / 4 * 3;
+                displayPos.x = GetScreenWidth() / 4 * 3;
             }
         }
+        
         void Update() override
         {
-            // AAAAAAAAAAAAA
-            // Have to do this instead of using pointers
-            // Since pointers might introduce issues if we want to save and
-            // load from disk
-            Paddle *pad = TUtils::GetComponentFromEntity<Paddle>(entityID);
             DrawText(std::to_string(pad->score).c_str(), displayPos.x, displayPos.y, fSize, color);
         }
     };

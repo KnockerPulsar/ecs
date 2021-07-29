@@ -11,13 +11,12 @@ namespace pong
     class Component;
     class QuadTree;
 
-    BaseCollision::BaseCollision(/* args */) {}
+    BaseCollision::BaseCollision() { tag = tags::coll; }
     BaseCollision::~BaseCollision(){};
     void BaseCollision::DrawDebug(raylib::Color col) {}
 
     // Should store logic for collisions
     // Should be Invoked on both collider and colidee, depends on the component implementation
-    // TODO: Maybe change things around so that the system is the one checking for collisions, not the component?
     void BaseCollision::OnCollision(Component *other)
     {
         // Haven't collided before with this obj
@@ -29,6 +28,7 @@ namespace pong
         else
         {
             // TraceLog(LOG_DEBUG, "Collision staying...");
+            Entity::GetEntity(entityID)->OnCollisionStay(this, other);
         }
     }
 
