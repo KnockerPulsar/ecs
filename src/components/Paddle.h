@@ -6,6 +6,7 @@
 #include "Wall.h"
 #include "../Event.h"
 #include <algorithm>
+#include "../Game.h"
 
 // A paddle component is responsible for:
 //      The visual representation of the paddle
@@ -53,6 +54,11 @@ namespace pong
         }
 
         void Start() override { this->position = &GetEntity()->position; }
+
+        void Reset() override
+        {
+            score = 0;
+        }
 
         void Draw()
         {
@@ -127,7 +133,7 @@ namespace pong
                 // And so on (integer division)
                 segToFill = std::min((int)dy / (int)segSizeY, NUM_SEGMENTS - 1);
 
-                Event::AddEvent(0.5, [this]
+               Game::currScene->AddEvent(0.5, [this]
                                 { this->fillSeg = false; });
             }
         }

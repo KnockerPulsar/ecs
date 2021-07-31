@@ -9,6 +9,8 @@
 #include <future>
 #include "../TUtils.h"
 #include "../Event.h"
+#include "../MainGame.h"
+#include "../Game.h"
 
 // Forward Declarations
 void XCHG(float &A, float &B);
@@ -22,13 +24,14 @@ namespace pong
         TraceLog(LOG_DEBUG, "Events test");
     }
 
-    Ball::Ball(raylib::Texture2D *goalPart, float radius, float minSpeed, float maxSpeed, float accelRate)
+    Ball::Ball(raylib::Texture2D *goalPart, float radius, float minSpeed, float maxSpeed, IScene *game, float accelRate)
     {
         tag = tags::indep;
         this->radius = radius;
         this->minSpeed = minSpeed;
         this->maxSpeed = maxSpeed;
         this->position = position;
+        this->game = game;
         this->accelRate = accelRate;
         goalParticle = goalPart;
     }
@@ -112,11 +115,6 @@ namespace pong
         {
             velocity.x = velMag;
             velocity.y = 0;
-
-            // Create an entity that constantly draws a rectangle over the hit segment
-            Event::AddEvent(0, [] {
-
-            });
             return;
         }
 
@@ -158,7 +156,17 @@ namespace pong
     void Ball::NetCollision(Net *collNet)
     {
         Paddle *pad = TUtils::GetComponentFromEntity<Paddle>(collNet->pID);
+        MainGame *mainGame = dynamic_cast<MainGame *>(game);
+
         pad->score++;
+
+        if (mainGame && pad->score > mainGame->maxScore)
+        {
+            // All of this can probably be replaced with the entity ID 
+            mainGame->maxScore = pad->score;
+            mainGame->winnerNum = pad->playerNum;
+            mainGame->winnerColor = pad->BoxColor;
+        }
 
         // std::function<void()> fn = lambda;
         // TODO: I think this leaks memory

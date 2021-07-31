@@ -32,6 +32,7 @@ namespace pong
     virtual ~Component() {}
     virtual void Update() {}
     virtual void Start() {}
+    virtual void Reset() {}
     virtual bool CheckCollision(Component *other) { return false; }
     virtual bool CheckCollision(BaseCollision *other) { return false; }
     virtual bool CheckCollision(BallCollision *other) { return false; }

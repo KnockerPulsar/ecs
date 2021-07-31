@@ -2,6 +2,7 @@
 #include "../Utils.h"
 #include "Component.h"
 #include "../../include/raylib-cpp.hpp"
+#include "../IScene.h"
 
 namespace pong
 {
@@ -16,11 +17,12 @@ namespace pong
         raylib::Vector2 *position;
         raylib::Vector2 initialPos;
         raylib::Texture2D *goalParticle;
+        IScene *game;
 
     public:
         raylib::Vector2 velocity;
 
-        Ball(raylib::Texture2D *goalPart, float radius, float minSpeed, float maxSpeed, float accelRate = 0.001);
+        Ball(raylib::Texture2D *goalPart, float radius, float minSpeed, float maxSpeed, IScene *game, float accelRate = 0.001);
         ~Ball() override;
 
         void Start() override;
@@ -32,8 +34,8 @@ namespace pong
         void Update() override;
         void Accelerate();
         void OnCollisionEnter(Component *other) override;
-        void PaddleCollision(Paddle* colliderPaddle);
-        void NetCollision(Net* collNet);
+        void PaddleCollision(Paddle *colliderPaddle);
+        void NetCollision(Net *collNet);
     };
 
 } // namespace pong

@@ -10,21 +10,25 @@
 namespace pong
 {
 
-    // Have to initialize it here...
-    std::unordered_map<int, Entity *> *Entity::entities = new std::unordered_map<int, Entity *>();
-
     Entity::Entity(float x, float y)
     {
         entityID = Utils::GetUniqueID();
-        position.x = x;
-        position.y = y;
+        initPos = raylib::Vector2(x,y);
+        position = initPos;
 
-        if (!Entity::entities)
-            Entity::entities = new std::unordered_map<int, Entity *>();
-
-        (*Entity::entities)[entityID] = this;
+        Game::currScene->entites[entityID] = this;
     }
     Entity::~Entity() { TraceLog(LOG_DEBUG, "Entity destroyed"); }
+
+    void Entity::Reset()
+    {
+        position = initPos;
+        for (auto &&comp : idComponents)
+        {
+            comp.second->Reset();
+        }
+        
+    }
 
     std::vector<Component *> *Entity::GetComponents(const std::type_index &type)
     {
@@ -60,12 +64,12 @@ namespace pong
 
     Entity *Entity::GetEntity(const int &id)
     {
-        return (*Entity::entities)[id];
+        return Game::currScene->entites[id];
     }
 
     void Entity::AddComponent(pong::Component *component)
     {
-        auto systems = System::systems;
+        auto systems = Game::currScene->systems;
 
         if (!component)
             return;
@@ -97,7 +101,7 @@ namespace pong
         Component *comp = found->second;
         typeComponents.erase(typeid(*comp));
         idComponents.erase(found);
-        System::systems[comp->tag]->RemoveComponent(comp);
+        Game::currScene->systems[comp->tag]->RemoveComponent(comp);
     }
 
     pong::System *Entity::AddNewSystem(pong::Component *component)
@@ -106,7 +110,7 @@ namespace pong
 
         newSys = new System(component->tag);
 
-        System::systems[component->tag] = newSys;
+        Game::currScene->systems[component->tag] = newSys;
         return newSys;
     }
 
@@ -155,7 +159,7 @@ namespace pong
     {
 
         std::string str;
-        for (auto i : *Entity::entities)
+        for (auto i : Game::currScene->entites)
         {
 
             str = "Entity: " + std::to_string(i.second->entityID) + ", number of components: " +
@@ -165,6 +169,6 @@ namespace pong
                 str += "\t Component: " + std::to_string(comp.second->componentID) + '\n';
             }
         }
-        // // TraceLog(LOG_DEBUG, str.c_str());
+        // TraceLog(LOG_DEBUG, str.c_str());
     }
 }

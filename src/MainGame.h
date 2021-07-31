@@ -1,3 +1,4 @@
+#pragma once
 #include "IScene.h"
 #include "raylib.h"
 #include "../include/raylib-cpp.hpp"
@@ -18,23 +19,16 @@
 #include "components/BallTrail.h"
 #include "Event.h"
 
-std::vector<pong::Event *> pong::Event::events = std::vector<pong::Event *>();
-
 namespace pong
 {
     class MainGame : public IScene
     {
-    private:
-        /* data */
     public:
-        MainGame()
-        {
-        }
+        int maxScore = -1, winnerNum, winningScore;
+        raylib::Color winnerColor;
+        bool inited = false;
 
-        ~MainGame()
-        {
-            delete pong::Entity::entities;
-        }
+        MainGame(int winningScore) : winningScore(winningScore) {}
 
         void Update() override
         {
@@ -43,20 +37,16 @@ namespace pong
 
             float deltaTime = GetFrameTime();
 
-            // Event loop
-            for (auto i = pong::Event::events.begin(); i < pong::Event::events.end(); ++i)
-            {
-                if ((*i)->Tick(deltaTime))
-                    pong::Event::events.erase(i);
-            }
-
             // Game loop (logic, collision, particles, drawing)
-            for (auto &&system : pong::System::systems)
+            for (auto &&system : systems)
                 system.second->Update();
         }
 
-        void Start() override
+        void Start(IScene *prevScene) override
         {
+            if (inited)
+                return;
+
             // Common paddle variables
             raylib::Vector2 PaddleSize{15, 100};
             float PaddleSpeed = 1000, ballRadius = 10, ballSpeed = 512,
@@ -67,6 +57,7 @@ namespace pong
             // Left and right paddle inits
             // ============================================================================
             // Entity creation
+
             float offset = 10;
             static pong::Entity lPaddle(PaddleSize.x, screenHeight / 2 - PaddleSize.y / 2),
                 rPaddle(screenWidth - PaddleSize.x * 2, screenHeight / 2 - PaddleSize.y / 2),
@@ -82,7 +73,7 @@ namespace pong
             // Main logic components
             static pong::Paddle rPaddleComp(PaddleSize, PaddleSpeed, 2, RED);
             static pong::Paddle lPaddleComp(PaddleSize, PaddleSpeed, 1, BLUE);
-            static pong::Ball ballComp(&wTri, ballRadius, ballSpeed, ballSpeed);
+            static pong::Ball ballComp(&wTri, ballRadius, ballSpeed, ballSpeed, (IScene *)this);
             static pong::Wall tWallComp, bWallComp;
             static pong::ScoreDisplay lScore(scoreSize), rScore(scoreSize);
 
@@ -141,8 +132,15 @@ namespace pong
             //  GenerateBalls(100, screenWidth, screenHeight, wTri, ballRadius, ballSpeed, lPaddleComp, rPaddleComp);
 
             // Starting tasks for each component
-            for (auto &&system : pong::System::systems)
+            for (auto &&system : systems)
                 system.second->Start();
+
+            inited = true;
+        }
+
+        void CleanUp(IScene *nextScene) override
+        {
+            Reset();
         }
 
         void GenerateBalls(int ballCount, int screenWidth, int screenHeight, raylib::Texture2D &wTri, float ballRadius, float ballSpeed, pong::Paddle &lPaddleComp, pong::Paddle &rPaddleComp)
@@ -158,7 +156,7 @@ namespace pong
                 balls[i] = new pong::Entity((float)(screenWidth / 2) + pong::Utils::GetRand(-50, 50),
                                             (float)(screenHeight / 2) + pong::Utils::GetRand(-50, 50));
 
-                ballComps[i] = new pong::Ball(&wTri, ballRadius, ballSpeed, ballSpeed);
+                ballComps[i] = new pong::Ball(&wTri, ballRadius, ballSpeed, ballSpeed, this);
 
                 ballInitColls[i] = new pong::BallCollision(ballRadius);
 
@@ -171,6 +169,15 @@ namespace pong
                 balls[i]->AddComponent(ballColls[i]);
 
                 balls[i]->AddComponent(ballTrails[i]);
+            }
+        }
+
+        void Reset()
+        {
+            maxScore = -1;
+            for (auto &&entity : Game::currScene->entites)
+            {
+                entity.second->Reset();
             }
         }
     };

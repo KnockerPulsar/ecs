@@ -16,9 +16,6 @@ namespace pong
     class System
     {
     public:
-        // Stores all currently existing systems for quick access from anywhere
-        static std::unordered_map<pong::tags, pong::System *, pong::TagsHashClass> systems;
-
         // Stores this system's components
         std::vector<Component *> systemComponents;
 

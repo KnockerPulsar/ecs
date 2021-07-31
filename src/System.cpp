@@ -9,9 +9,6 @@
 
 namespace pong
 {
-
-    std::unordered_map<pong::tags, pong::System *, pong::TagsHashClass> System::systems;
-
     System::System(tags compTag)
     {
         switch (compTag)
@@ -179,7 +176,7 @@ namespace pong
     {
         if (!comp)
             return;
-        systems[comp->tag]->AddComponent(comp);
+        Game::currScene->systems[comp->tag]->AddComponent(comp);
     }
 
     void System::RemoveComponentIndep(Component *comp)
@@ -187,7 +184,7 @@ namespace pong
         if (!comp)
             return;
 
-        systems[comp->tag]->RemoveComponent(comp);
+        Game::currScene->systems[comp->tag]->RemoveComponent(comp);
     }
 
     void System::BuildQuadTree()

@@ -13,6 +13,8 @@ namespace pong
   class Entity
   {
   private:
+    raylib::Vector2 initPos;
+    
   public:
     raylib::Vector2 position;
     int entityID;
@@ -26,14 +28,12 @@ namespace pong
     // To allow for multiple components with the same key
     std::unordered_multimap<std::type_index, pong::Component *> typeComponents;
 
-    // A map of all the game's entities, accessed by the entity's ID
-    // Definitely not thread safe
-    static std::unordered_map<int, Entity *> *entities;
-
     // Constructor with 2D coordinates
     Entity(float x, float y);
 
     ~Entity();
+
+    void Reset();
 
     std::vector<Component *> *GetComponents(const std::type_index &type);
 
