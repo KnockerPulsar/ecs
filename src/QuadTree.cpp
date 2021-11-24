@@ -110,7 +110,8 @@ namespace pong
         {
             if (contained.size() != 0)
             {
-                DrawTextRec(raylib::Font(), std::to_string(myNum).c_str(), collision.GetRect(), 20, 1, true, quadColor);
+                Color col = {quadColor};
+                DrawText(std::to_string(myNum).c_str(), collision.GetRect().x, collision.GetRect().y, 20, col);
                 collision.DrawDebug(quadColor);
             }
         }

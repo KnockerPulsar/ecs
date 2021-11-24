@@ -1,6 +1,6 @@
-#include "MainMenu.h"
-#include "MainGame.h"
-#include "WinScreen.h"
+#include "./MainMenu.h"
+#include "./MainGame.h"
+#include "./WinScreen.h"
 #include "Game.h"
 
 // FIXME:?? If you hit the ball with the side of the paddle, the ball might get stuck
@@ -15,7 +15,11 @@
 
 */
 
-// TODO: Implement "ephemeral" and "persistent" scenes 
+// TODO: Drawing all particles to a texture first then displaying that on screen, might be better than lots of drawcalls?
+
+// TODO: 2D layers
+
+// TODO: Implement "ephemeral" and "persistent" scenes
 
 // TODO: Maybe remove system and event checking from the scene code, leaving just the Update() function for custom behaviour?
 
@@ -44,7 +48,6 @@ int main()
 
   // Need to pass the winning player's number and color somehow...
   pong::WinScreen win;
-
 
   // Scene transitions
   menu.AddTransition(std::bind(&pong::MainMenu::GoToMainGame, &menu), &game);

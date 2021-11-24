@@ -1,5 +1,5 @@
 #pragma once
-#include "../include/raylib-cpp.hpp"
+#include "../include/raylib-cpp/raylib-cpp.hpp"
 #include "Tags.h"
 #include <unordered_map>
 #include <typeindex>

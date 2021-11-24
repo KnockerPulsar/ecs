@@ -1,5 +1,5 @@
 #pragma once
-#include "../../include/raylib-cpp.hpp"
+#include "../../include/raylib-cpp/raylib-cpp.hpp"
 #include "BaseCollision.h"
 namespace pong
 {

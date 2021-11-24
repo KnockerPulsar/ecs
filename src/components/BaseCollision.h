@@ -3,7 +3,7 @@
 #include "raylib.h"
 #include "Component.h"
 #include <unordered_map>
-#include "../../include/raylib-cpp.hpp"
+#include "../../include/raylib-cpp/raylib-cpp.hpp"
 
 namespace pong
 {

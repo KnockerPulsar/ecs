@@ -4,7 +4,7 @@
 #include "Component.h"
 #include <vector>
 #include "raylib.h"
-#include "../../include/raylib-cpp.hpp"
+#include "../../include/raylib-cpp/raylib-cpp.hpp"
 
 namespace pong
 {

@@ -1,7 +1,7 @@
 #pragma once
 #include "IScene.h"
 #include "raylib.h"
-#include "../include/raylib-cpp.hpp"
+#include "../include/raylib-cpp/raylib-cpp.hpp"
 
 #include <unordered_map>
 #include <vector>

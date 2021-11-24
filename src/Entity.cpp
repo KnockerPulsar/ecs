@@ -18,6 +18,7 @@ namespace pong
 
         Game::currScene->entites[entityID] = this;
     }
+    
     Entity::~Entity() { TraceLog(LOG_DEBUG, "Entity destroyed"); }
 
     void Entity::Reset()
