@@ -5,7 +5,8 @@ Feel free to use this however you like, or to improve on it/suggest improvements
 
 # What's currently implmented?
 - An ECS system. Not really based off any research, just based off my requirements and my experience with the Unity Engine.
-- An immature collision system. The only colliders right now are circles and rectangles, and I'm sure performance could be improved greatly if given to an experienced programmer.
+- A bit more mature collision system, using a quadtree to optimize collisions. Shapes are still a circle and rect, but that should do for now.
+- A "particle" system (It's really just a bunch of calls to raylib to draw a triangle)
+- A "Scene" system, does basic condition checking and moving between scenes. Keeps the other scenes in memory.
 - A delayed function calling system. Currently allows passing functions and lambdas with a delay.
 - I probably forgot something...
-
