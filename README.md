@@ -10,3 +10,13 @@ Feel free to use this however you like, or to improve on it/suggest improvements
 - A "Scene" system, does basic condition checking and moving between scenes. Keeps the other scenes in memory.
 - A delayed function calling system. Currently allows passing functions and lambdas with a delay.
 - I probably forgot something...
+
+# The Big Picture
+Here's a quick rundown on how things currently run. I simplified things a bit to focus on the big picture. 
+- At the root, you have the entrypoint `RaylibPong.cpp`. Currently it sets up different scenes and the transitions between them, then runs the game.
+  - **The game** acts as a container for all scenes and scene independant events.
+    - **Scenes** are a container that hold entities created in them and their components. Each scene has a queue for events that can be used for invoking some functions after a delay. You can think of a scene as a **level**.
+      - **Each system** holds a list of components and does some operation on each component in a specific way. (perhaps just a linear for loop, a collision quadtree build, etc..).
+        - **Components** are the basic block of logic / behaviour in the game. Just inherit from this class and override your needed functions.
+      - **Each entity** is a container for components, it also helps broadcast collision events to other components on the same entity.
+      - **The event queue** is just a bunch of `fun = void fn(void)` and `delay = float` pairs that we check on every iteration and call the function only when its time is up.

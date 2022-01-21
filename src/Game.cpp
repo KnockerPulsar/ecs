@@ -24,6 +24,7 @@ namespace pong
 
         return this;
     }
+    
     void Game::Init()
     {
         if (Game::currScene)
@@ -39,16 +40,22 @@ namespace pong
             ClearBackground(BLACK);
             BeginDrawing();
 
+            // Loop over the event queue
+            // This applies over the whole game
+            // Might be useful for music playing, etc..
             this->CheckGameEvents(dT);
+
+            // Check scene transitions 
             Game::currScene = Game::currScene->CheckTransitions();
 
             // If currentScene is nullptr, exit the game
-            if (!(Game::currScene = Game::currScene->CheckTransitions()))
+            if (!Game::currScene)
                 break;
-
             
+            // Update systems
             Game::currScene->Update();
             
+            // Loop over scene specific events
             Game::currScene->CheckSceneEvents(dT);
 
             EndDrawing();

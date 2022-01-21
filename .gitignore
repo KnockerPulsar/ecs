@@ -5,11 +5,11 @@ bin/*
 *.zip
 *.7z
 builds/*
-vendor/*
-vendor
-vendor/raylib-cpp/*
 valgrind-out.txt
 callgrind.out.142205
 callgrind.out.152431
 callgrind.out.166250
+include/raylib-cpp/*
+
+!include/raylib-cpp/include
 

@@ -2,7 +2,7 @@
 #include "IScene.h"
 #include "Utils.h"
 #include <string>
-#include "../include/raylib-cpp/raylib-cpp.hpp"
+#include "../include/raylib-cpp/include/raylib-cpp.hpp"
 
 namespace pong
 {

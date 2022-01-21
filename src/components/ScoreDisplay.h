@@ -1,5 +1,5 @@
 #include "Component.h"
-#include "../../include/raylib-cpp/raylib-cpp.hpp"
+#include "../../include/raylib-cpp/include/raylib-cpp.hpp"
 #include "../Entity.h"
 #include "Paddle.h"
 #include "../TUtils.h"

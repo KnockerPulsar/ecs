@@ -3,7 +3,10 @@
 #include "./WinScreen.h"
 #include "Game.h"
 
-// FIXME:?? If you hit the ball with the side of the paddle, the ball might get stuck
+// FIXME: Iterator invalidation when deleting components or entities while iterating over a vector of them.
+// Not really a big issue now.
+
+// FIXME:?? If you hit the ball with the side of the paddle, the ball might get stucks
 // inside the paddle;
 
 /*
@@ -14,6 +17,9 @@
   (Or we'd use a function in case we have other internal lists we need to maintain, such as a physics list for example)
 
 */
+// TODO: Remove events from the queue/vector on completion
+
+// TODO: Convert the event vector to a queue that's sorted by delay 
 
 // TODO: Drawing all particles to a texture first then displaying that on screen, might be better than lots of drawcalls?
 
@@ -28,11 +34,12 @@
 // TODO: Improve on the "event" system
 // Add repeated calls with delay (foo() every 0.5 seconds for example)
 // or calls that will be called a certain number of frames/time. (foo() for every frame for 0.5 seconds for example)
+// Take into account if the event should repeat for the event queue sorting function so that repeated events are not popped.
 
 // TODO: Instead of remaking the whole quadtree for a mostly static scene, we can mark each collider as "static" or
 // "dynamic", then we only need to rebuild the nodes for dynamic colliders
 
-// TODO: Improve on the "scene" system
+// TODO: Improve the "scene" system
 
 // TODO: More TODO's
 
@@ -50,22 +57,32 @@ int main()
   pong::WinScreen win;
 
   // Scene transitions
+  // Menu     -> game       (on enter pressed)
+  // game     -> win screen (on someone winning)
+  // winning  -> game       (on replay chosen)
+  // win      -> exit       (on quit chosen)
   menu.AddTransition(std::bind(&pong::MainMenu::GoToMainGame, &menu), &game);
 
-  game.AddTransition([&game]
-                     { return game.maxScore == game.winningScore; },
-                     &win);
+  game.AddTransition(
+      [&game]
+      { return game.maxScore == game.winningScore; },
+      &win);
 
-  win.AddTransition([&win]
-                    { return win.replay; },
-                    &game);
+  win.AddTransition(
+      [&win]
+      { return win.replay; },
+      &game);
 
-  win.AddTransition([&win]
-                    { return win.quit; },
-                    nullptr);
+  win.AddTransition(
+      [&win]
+      { return win.quit; },
+      nullptr);
 
   // Game instance creation
   pong::Game gameInstance(screenWidth, screenHeight, "RaylibPong!", 0, LOG_ALL);
+
+  // CHAINING BABYYYYYYYYYYYYYYY
+  // Adds scenes, with each having its transitions
   gameInstance.AddScene(&menu)->AddScene(&game)->AddScene(&win);
 
   // Game initialization and main loop

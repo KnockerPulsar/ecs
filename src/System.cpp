@@ -4,7 +4,6 @@
 #include "components/Component.h"
 #include "components/Particle.h"
 #include "TUtils.h"
-
 #include "System.h"
 
 namespace pong
@@ -63,8 +62,11 @@ namespace pong
     {
         UpdateIndependent(); // For debugging, shows colliders
 
-        // NaiveCollision();
+        #ifdef QUAD_COLLISION
         QuadTreeCollision();
+        #else
+        NaiveCollision();
+        #endif
     }
 
     void System::UpdateBlendedParticles()
@@ -111,7 +113,10 @@ namespace pong
     void System::QuadTreeCollision()
     {
         BuildQuadTree();
-        root->Draw(raylib::Color(0, 228, 48, 50), raylib::Color::Red());
+
+        #ifdef QUAD_COLLISION_DRAW
+            root->Draw(raylib::Color(0, 228, 48, 50), raylib::Color::Red());
+        #endif
 
         for (auto &&compA : systemComponents)
         {

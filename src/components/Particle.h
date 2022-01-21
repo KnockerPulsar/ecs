@@ -1,5 +1,5 @@
 #pragma once
-#include "../../include/raylib-cpp/raylib-cpp.hpp"
+#include "../../include/raylib-cpp/include/raylib-cpp.hpp"
 #include "Component.h"
 #include <functional>
 #include "BallTrail.h"

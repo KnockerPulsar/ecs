@@ -32,6 +32,7 @@ namespace pong
         {
             for (auto &&edge : sceneWeb)
             {
+
                 IScene *nextScene = edge.second;
                 bool shouldTransition = edge.first();
 
@@ -49,38 +50,46 @@ namespace pong
             return this;
         }
 
+        // Given a fucntion (preferably a lambda) and a scene
+        // Calls back this function every frame to check for scene transitions
         void AddTransition(std::function<bool()> transitionCheck, IScene *scene)
         {
             sceneWeb.emplace_back(transitionCheck, scene);
         }
 
+        // Loops over the event queue of the current scene
         void CheckSceneEvents(float dT)
         {
             for (auto &&event : events)
                 event->Tick(dT);
         }
 
+        // Loops over each system contained in the scene and updates it,
+        // which internally loops over the components contained in that system
         void UpdateSystems()
         {
-            for (auto &&system : systems)
-                system.second->Update();
+            // C++ 17 destructurings
+            // Similar to how python uses tuples
+            for (auto &&[tag, system] : systems)
+                system->Update();
         }
 
+        // Add an event to the event queue with parameters
         template <typename func, typename... args>
         void AddEvent(float delay, func &&fun, args... arguments)
         {
-            Event *ev = new Event();
-            ev->fn = std::bind(fun, arguments...);
-            ev->delay = delay;
+            Event *ev = new Event(
+                delay,
+                std::bind(fun, arguments...));
             events.push_back(ev);
         }
 
+        // Add an even to the event queue without parameters
+        // fn(void)
         template <typename func>
         void AddEvent(float delay, func &&fun)
         {
-            Event *ev = new Event();
-            ev->fn = fun;
-            ev->delay = delay;
+            Event *ev = new Event(delay, fun);
             events.push_back(ev);
         }
     };

@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
-#include "../include/raylib-cpp/raylib-cpp.hpp"
+#include "../include/raylib-cpp/include/raylib-cpp.hpp"
 #include "Event.h"
 
 namespace pong

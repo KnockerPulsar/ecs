@@ -2,6 +2,8 @@
 #include <functional>
 #include <vector>
 
+typedef std::function<void(void)> void_fn;
+
 namespace pong
 {
     class Event
@@ -9,9 +11,10 @@ namespace pong
 
     public:
         float delay;
-        std::function<void(void)> fn;
+        void_fn fn;
 
         Event(/* args */) {}
+        Event(float delay, void_fn fn) : delay(delay), fn(fn) {}
         ~Event() {}
 
         bool Tick(float deltaTime)

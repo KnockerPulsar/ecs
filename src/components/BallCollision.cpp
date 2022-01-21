@@ -5,7 +5,7 @@
 #include "../Entity.h"
 #include "RectCollision.h"
 #include <iostream>
-#include "../../include/raylib-cpp/raylib-cpp.hpp"
+#include "../../include/raylib-cpp/include/raylib-cpp.hpp"
 
 namespace pong
 {

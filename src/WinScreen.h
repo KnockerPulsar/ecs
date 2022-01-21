@@ -1,5 +1,5 @@
 #pragma oncec
-#include "../include/raylib-cpp/raylib-cpp.hpp"
+#include "../include/raylib-cpp/include/raylib-cpp.hpp"
 #include <string>
 #include "Utils.h"
 #include "IScene.h"
