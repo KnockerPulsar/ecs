@@ -104,20 +104,17 @@ namespace pong
 
         // Add an event to the event queue with parameters
         template <typename func, typename... args>
-        void AddEvent(float delay, func &&fun, args... arguments)
+        void AddEvent(float delay, func &&fun, int repititions = 1, float repititionDelay = 1, args... arguments)
         {
-            Event *ev = new Event(
-                delay,
-                std::bind(fun, arguments...));
-            events.push_back(ev);
+            AddEvent(delay, std::bind(fun, arguments...), repititions, repititionDelay);
         }
 
         // Add an even to the event queue without parameters
         // fn(void)
         template <typename func>
-        void AddEvent(float delay, func &&fun)
+        void AddEvent(float delay, func &&fun, int repititions = 1, float repititionDelay = 1)
         {
-            Event *ev = new Event(delay, fun);
+            Event *ev = new Event(delay, fun, repititions, repititionDelay);
             events.push_back(ev);
         }
     };

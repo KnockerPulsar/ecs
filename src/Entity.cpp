@@ -73,7 +73,7 @@ namespace pong
         auto systems = Game::currScene->systems;
 
         if (!component)
-            return;
+            return *this;
 
         const tags t = component->tag;
         pong::System *system = systems[t];

@@ -120,8 +120,6 @@ namespace pong
             }
             else if (ball = TUtils::GetComponentByType<Ball>(other->entityID))
             {
-                // Fill the hit segment for 0.5 seconds
-                fillSeg = true;
 
                 // Figure out which segment to fill
                 // Segments are ordered from 0 - NUM_SEGMENTS-1 from top to bottom
@@ -133,30 +131,25 @@ namespace pong
                 // And so on (integer division)
                 segToFill = std::min((int)dy / (int)segSizeY, NUM_SEGMENTS - 1);
 
+                // Fill the hit segment for 0.5 seconds
+                fillSeg = true;
+
+                // Toggle highlight after 2 seconds, then continue toggling every 0.5 seconds
+                // for 3 times. (On -> Off -> On -> Off)
+                //                     ^---------------^ Event responsibility
+                // `mutable` is essential to make the captured value modifiable
+                // Note that this modifies `remaining_iters` and not `iters`
                 Game::currScene->AddEvent(
-                    0.5,
-                    [this]
-                    { this->fillSeg = false; });
+                    2,
+                    [this, remaining_iters = 2]() mutable
+                    {
+                        this->fillSeg = remaining_iters % 2;
+                        remaining_iters--;
+                    },
+                    3,
+                    0.5);
             }
         }
-
-        // void OnCollisionStay(Component *other) override
-        // {
-        //     Wall *wall;
-        //     if (wall = TUtils::GetComponentFromEntity<Wall>(other->entityID))
-        //     {
-        //         TraceLog(LOG_DEBUG, "Staying in collision with a wall");
-        //     }
-        // }
-        // void OnCollisionExit(Component *other) override
-        // {
-
-        //     Wall *wall;
-        //     if (wall = TUtils::GetComponentFromEntity<Wall>(other->entityID))
-        //     {
-        //         TraceLog(LOG_DEBUG, "Exited collision with a wall");
-        //     }
-        // }
     };
 
 } // namespace pong
