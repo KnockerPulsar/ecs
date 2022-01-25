@@ -10,7 +10,9 @@ namespace pong
     {
 
     public:
+        // How long until the event function invokes
         float delay;
+        // The function that will be called after `delay` seconds
         void_fn fn;
 
         Event(/* args */) {}

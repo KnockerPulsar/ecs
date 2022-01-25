@@ -60,8 +60,36 @@ namespace pong
         // Loops over the event queue of the current scene
         void CheckSceneEvents(float dT)
         {
-            for (auto &&event : events)
-                event->Tick(dT);
+            std::vector<int> toBeRemovedInd;
+
+            // Run events
+            // If an event completed, store its index
+            // so we can remove it from the vector
+            for (int i = 0; i < events.size(); i++)
+                if (events[i]->Tick(dT))
+                    toBeRemovedInd.push_back(i);
+
+            /* 
+            https://stackoverflow.com/questions/4442477/remove-ith-item-from-a-c-stdvector
+            Remove elements from vector in O(1) by replacing the element
+            to be removed with the last element, then removing the last element
+            AKA the element we want to remove
+            indx: 0 1 2 3 4
+            data: 1 4 5 7 8
+            To remove index 2
+            data: 1 4 8 7 5  (swap)
+            data: 1 4 8 7    (removal) 
+
+            This is done to avoid iterator invalidation 
+            (deleting something from an array you're iterating over)
+            (AKA pulling the rug from under yourself)
+            */
+
+            for (auto &&ind : toBeRemovedInd)
+            {
+                events[ind] = std::move(events.back());
+                events.pop_back();
+            }
         }
 
         // Loops over each system contained in the scene and updates it,

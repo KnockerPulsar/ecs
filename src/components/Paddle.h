@@ -133,8 +133,10 @@ namespace pong
                 // And so on (integer division)
                 segToFill = std::min((int)dy / (int)segSizeY, NUM_SEGMENTS - 1);
 
-               Game::currScene->AddEvent(0.5, [this]
-                                { this->fillSeg = false; });
+                Game::currScene->AddEvent(
+                    0.5,
+                    [this]
+                    { this->fillSeg = false; });
             }
         }
 

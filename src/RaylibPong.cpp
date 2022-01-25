@@ -3,6 +3,10 @@
 #include "./WinScreen.h"
 #include "Game.h"
 
+#ifndef MAX_FPS
+  #define MAX_FPS 60
+#endif
+
 // FIXME: Iterator invalidation when deleting components or entities while iterating over a vector of them.
 // Not really a big issue now.
 
@@ -15,11 +19,9 @@
   It would contain mainly a container for all its components (maybe a vector of components pointers perhaps)
   Then we'd create multiple components for the game logic. To add them to an entity, we'd just add them to the vector
   (Or we'd use a function in case we have other internal lists we need to maintain, such as a physics list for example)
-
 */
-// TODO: Remove events from the queue/vector on completion
 
-// TODO: Convert the event vector to a queue that's sorted by delay 
+// TODO: Convert the event vector to a queue that's sorted by delay
 
 // TODO: Drawing all particles to a texture first then displaying that on screen, might be better than lots of drawcalls?
 
@@ -48,8 +50,11 @@ int main()
   int screenWidth = 1280, screenHeight = 720;
 
   // Scenes creation
-  pong::MainMenu menu("RaylibPong!", "Press <Enter> to play", "Press <Q> to quit",
-                      raylib::Color::Magenta(), 0.5, 60, 0.5, 80);
+  pong::MainMenu menu(
+      "RaylibPong!",
+      "Press <Enter> to play",
+      "Press <Q> to quit",
+      raylib::Color::Magenta(), 0.5, 60, 0.5, 80);
 
   pong::MainGame game(5);
 
@@ -79,7 +84,7 @@ int main()
       nullptr);
 
   // Game instance creation
-  pong::Game gameInstance(screenWidth, screenHeight, "RaylibPong!", 0, LOG_ALL);
+  pong::Game gameInstance(screenWidth, screenHeight, "RaylibPong!", MAX_FPS, LOG_ALL);
 
   // CHAINING BABYYYYYYYYYYYYYYY
   // Adds scenes, with each having its transitions
