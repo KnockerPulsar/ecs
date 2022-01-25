@@ -68,7 +68,7 @@ namespace pong
         return Game::currScene->entites[id];
     }
 
-    void Entity::AddComponent(pong::Component *component)
+    Entity& Entity::AddComponent(pong::Component *component)
     {
         auto systems = Game::currScene->systems;
 
@@ -91,14 +91,21 @@ namespace pong
 
         // Insert it into the id list
         idComponents[component->componentID] = component;
+
+        // Return a reference to the current entity to allow for chaining.
+        return *this;
     }
 
     void Entity::RemoveComponent(int &compID)
     {
+        // Check if a component with the same ID exists on the entity
+        // Return if not
         auto found = idComponents.find(compID);
         if (found == idComponents.end())
             return;
 
+        // The `found` iterator contains 2 things.
+        // found.first = compID, found.second = pointer to component
         Component *comp = found->second;
         typeComponents.erase(typeid(*comp));
         idComponents.erase(found);

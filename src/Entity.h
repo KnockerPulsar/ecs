@@ -43,7 +43,7 @@ namespace pong
 
     static Entity *GetEntity(const int &id);
 
-    void AddComponent(pong::Component *component);
+    Entity& AddComponent(pong::Component *component);
 
     void RemoveComponent(int &compID);
 

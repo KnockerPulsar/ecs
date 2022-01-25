@@ -57,9 +57,9 @@ namespace pong
             // Left and right paddle inits
             // ============================================================================
             // Entity creation
-
             float offset = 10;
-            static pong::Entity lPaddle(PaddleSize.x, screenHeight / 2 - PaddleSize.y / 2),
+            static pong::Entity
+                lPaddle(PaddleSize.x, screenHeight / 2 - PaddleSize.y / 2),
                 rPaddle(screenWidth - PaddleSize.x * 2, screenHeight / 2 - PaddleSize.y / 2),
                 ball((float)(screenWidth / 2), (float)(screenHeight / 2)),
                 tWall(0, offset),
@@ -104,29 +104,36 @@ namespace pong
             // Adding the components to the paddle entities
             // Note that this also automatically adds the components to their respective systems
             // Without this step, the components will not work
-            lPaddle.AddComponent(&lPaddleComp);
-            lPaddle.AddComponent(&lScore);
-            lPaddle.AddComponent(lRectColl);
+            lPaddle
+                .AddComponent(&lPaddleComp)
+                .AddComponent(&lScore)
+                .AddComponent(lRectColl);
 
-            rPaddle.AddComponent(&rPaddleComp);
-            rPaddle.AddComponent(rRectColl);
-            rPaddle.AddComponent(&rScore);
+            rPaddle
+                .AddComponent(&rPaddleComp)
+                .AddComponent(rRectColl)
+                .AddComponent(&rScore);
 
-            ball.AddComponent(&ballComp);
-            ball.AddComponent(ballColl);
-            ball.AddComponent(&bTrail);
+            ball
+                .AddComponent(&ballComp)
+                .AddComponent(ballColl)
+                .AddComponent(&bTrail);
 
-            tWall.AddComponent(tWallColl);
-            tWall.AddComponent(&tWallComp);
+            tWall
+                .AddComponent(tWallColl)
+                .AddComponent(&tWallComp);
 
-            bWall.AddComponent(bWallColl);
-            bWall.AddComponent(&bWallComp);
+            bWall
+                .AddComponent(bWallColl)
+                .AddComponent(&bWallComp);
 
-            lNet.AddComponent(lNetColl);
-            lNet.AddComponent(&lNetComp);
+            lNet
+                .AddComponent(lNetColl)
+                .AddComponent(&lNetComp);
 
-            rNet.AddComponent(rNetColl);
-            rNet.AddComponent(&rNetComp);
+            rNet
+                .AddComponent(rNetColl)
+                .AddComponent(&rNetComp);
 
             // Used to test naive VS quad tree collision
             //  GenerateBalls(100, screenWidth, screenHeight, wTri, ballRadius, ballSpeed, lPaddleComp, rPaddleComp);

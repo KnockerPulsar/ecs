@@ -7,12 +7,6 @@
   #define MAX_FPS 60
 #endif
 
-// FIXME: Iterator invalidation when deleting components or entities while iterating over a vector of them.
-// Not really a big issue now.
-
-// FIXME:?? If you hit the ball with the side of the paddle, the ball might get stucks
-// inside the paddle;
-
 /*
   ecs System:
   Instead of creating specific classes from each specific entity, we'd create a basic entity class.
@@ -21,29 +15,6 @@
   (Or we'd use a function in case we have other internal lists we need to maintain, such as a physics list for example)
 */
 
-// TODO: Convert the event vector to a queue that's sorted by delay
-
-// TODO: Drawing all particles to a texture first then displaying that on screen, might be better than lots of drawcalls?
-
-// TODO: 2D layers
-
-// TODO: Implement "ephemeral" and "persistent" scenes
-
-// TODO: Maybe remove system and event checking from the scene code, leaving just the Update() function for custom behaviour?
-
-// TODO: Make adding components to entities at compile time easier (through non-type arguments entt.AddComponents<comp1, comp2,...>())
-
-// TODO: Improve on the "event" system
-// Add repeated calls with delay (foo() every 0.5 seconds for example)
-// or calls that will be called a certain number of frames/time. (foo() for every frame for 0.5 seconds for example)
-// Take into account if the event should repeat for the event queue sorting function so that repeated events are not popped.
-
-// TODO: Instead of remaking the whole quadtree for a mostly static scene, we can mark each collider as "static" or
-// "dynamic", then we only need to rebuild the nodes for dynamic colliders
-
-// TODO: Improve the "scene" system
-
-// TODO: More TODO's
 
 int main()
 {
