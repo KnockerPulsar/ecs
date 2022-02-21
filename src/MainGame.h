@@ -58,14 +58,15 @@ namespace pong
             // ============================================================================
             // Entity creation
             float offset = 10;
+            float netWidth = 5;
             static pong::Entity
                 lPaddle(PaddleSize.x, screenHeight / 2 - PaddleSize.y / 2),
                 rPaddle(screenWidth - PaddleSize.x * 2, screenHeight / 2 - PaddleSize.y / 2),
-                ball((float)(screenWidth / 2), (float)(screenHeight / 2)),
+                ball(screenWidth / 2, screenHeight / 2),
                 tWall(0, offset),
                 bWall(0, screenHeight - offset),
                 lNet(offset, 0),
-                rNet((float)(screenWidth - offset), 0);
+                rNet(screenWidth - offset - netWidth, 0);
 
             // Resources
             static raylib::Texture2D wTri("data/particle_triangle_white.png");
@@ -86,8 +87,8 @@ namespace pong
 
             static pong::RectCollision tWallInitColl(screenWidth, 5);
             static pong::RectCollision bWallInitColl(screenWidth, 5);
-            static pong::RectCollision lNetInitColl(5, screenHeight);
-            static pong::RectCollision rNetInitColl(5, screenHeight);
+            static pong::RectCollision lNetInitColl(netWidth, screenHeight);
+            static pong::RectCollision rNetInitColl(netWidth, screenHeight);
 
             // Upcasting all collisions to their parent components
             static pong::BaseCollision *lRectColl = &lInitColl;

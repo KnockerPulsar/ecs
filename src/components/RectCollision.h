@@ -14,6 +14,7 @@ namespace pong
         float width, height;
 
         RectCollision( float w, float h);
+        RectCollision( Vector2* pos, float w, float h);
         ~RectCollision();
 
         void Update() override;

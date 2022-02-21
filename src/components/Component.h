@@ -22,7 +22,7 @@ namespace pong
     // I guess caching pointers is alright as long as we re-cache them
     // on loading from desk, depends on how it's implemented
     // If you don't intend on saving to disk, you can just use pointers
-    int entityID;
+    int entityID = -1;
     int componentID;
 
     std::string debug_type; // For debugging purposes

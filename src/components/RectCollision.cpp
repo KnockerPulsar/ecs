@@ -10,6 +10,7 @@ namespace pong
 {
 
     RectCollision::RectCollision(float w, float h) : width(w), height(h) {}
+    RectCollision::RectCollision(Vector2* pos, float w,float h) :  RectCollision(w,h) { position = pos;}
 
     RectCollision::~RectCollision() {}
 

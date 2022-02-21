@@ -156,10 +156,12 @@ namespace pong
 
     void System::Start()
     {
+        
         for (auto &&comp : systemComponents)
         {
             comp->Start();
         }
+
     }
 
     void System::AddComponent(Component *component)
@@ -204,11 +206,12 @@ namespace pong
                 TUtils::GetTypePtr<BaseCollision>(comp)->currentNodes.clear();
             }
         }
-        raylib::Vector2 *vec = new raylib::Vector2();
-        RectCollision rootColl = RectCollision(GetScreenWidth(), GetScreenHeight());
-        rootColl.position = vec;
 
-        rootColl.entityID = 6969;
+
+        // May god forgive me for dynamically allocating
+        raylib::Vector2* zero = new raylib::Vector2(0);
+        RectCollision rootColl = RectCollision(zero, GetScreenWidth(), GetScreenHeight());
+
 
         root = new QuadTree(rootColl, 2);
         for (auto &&comp : systemComponents)

@@ -17,6 +17,7 @@ namespace pong
         position = initPos;
 
         Game::currScene->entites[entityID] = this;
+        TraceLog(LOG_DEBUG, "Entity created"); 
     }
     
     Entity::~Entity() { TraceLog(LOG_DEBUG, "Entity destroyed"); }

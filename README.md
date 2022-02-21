@@ -3,6 +3,21 @@ Started as an attempt to make pong with raylib, evolved into me trying to use ra
 
 Feel free to use this however you like, or to improve on it/suggest improvements.
 
+# Pong scenes
+The scene system allows for different meanings for each input in different scenes. 
+It also allows using different entities with different logic without the overhead of updating entities in other scenes.
+
+The current scene system splits the systems and entities of the game with transitions possible between them.
+
+![Menu](Menu.png)
+*Main menu*
+
+![Game](Game.png)
+*Game screen*
+
+![Win](Win.png)
+*Win screen*
+
 # What's currently implmented?
 - An ECS system. Not really based off any research, just based off my requirements and my experience with the Unity Engine.
 - A bit more mature collision system, using a quadtree to optimize collisions. Shapes are still a circle and rect, but that should do for now.

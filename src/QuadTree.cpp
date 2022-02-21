@@ -87,10 +87,8 @@ namespace pong
         {
             auto [x, y, w, h] = GetChildCoords(&collision, i);
             raylib::Vector2 *vec = new raylib::Vector2(x, y);
-            RectCollision childColl = RectCollision(w, h);
-            childColl.position = vec;
+            RectCollision childColl = RectCollision(vec,w, h);
 
-            childColl.entityID = 69;
             children[i] = new QuadTree(childColl, capacity);
             for (auto &&con : cont)
             {

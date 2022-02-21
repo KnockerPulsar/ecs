@@ -3,6 +3,23 @@
 - FIXME:?? If you hit the ball with the side of the paddle, the ball might get stuck inside the paddle.
 
 # TODOs
+- TODO: Figure out a way to not dynamically allocate while building a quadtree.
+  - One way we could go about this is to:
+    1. Add a `used` flag in the quadtree class.
+    2. During initialization, recursively allocate quadtrees and mark them all as not used.
+    3. While inserting, instead of allocating a quadtree, mark it as used.
+    4. While checking, instead of checking for nulls, check for used.
+    5. While destroying, just mark as unused.
+    6. Create a de-initializer function that actually de-allocates the quadtree during program shutdown.
+  - This still doesn't solve the problem of dynamically allocating position vectors though...  
+    The main issue is that collisions depend on their entity's position to position themselves in the world,
+    but quadtree collisions are not attached to any entity. 
+    My best solution would be to keep an array of allocated
+    `Vector2`'s, add to the array as we're initially creating the quadtree, then delete the array during de-initialization.
+    This way, we can make sure the positions outlive their collisions at the very least.
+
+- TODO: Better particle system, probably based on the one from [here](https://youtu.be/A0-UOZ2v4V8)
+- 
 - TODO: Iterator invalidation when deleting components or entities while iterating over a vector of them. (Not a big issue right now)
 
 - TODO: Instead of remaking the whole quadtree for a mostly static scene, we can mark each collider as "static" or
