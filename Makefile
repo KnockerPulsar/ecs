@@ -5,7 +5,7 @@
 # DQUAD_COLLISION_DRAW 	-> draw collision quadtree recursively
 # DMAX_FPS=max fps 		-> The maximum FPS the main loop could run at.
 #						   -DMAX_FPS=0 is uncapped. FPS is capped at 60 if not specified
-defines := -ggdb -DQUAD_COLLISION  
+defines := -ggdb -DQUAD_COLLISION_DRAW -DQUAD_COLLISION
 
 
 # Define custom functions

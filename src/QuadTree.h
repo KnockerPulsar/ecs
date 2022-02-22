@@ -4,6 +4,8 @@
 #include "components/RectCollision.h"
 
 #define NUM_CHILDREN 4
+#define MAX_DEPTH 6
+#define MAX_CONTAINED 1
 
 // Description:
 /*
@@ -29,17 +31,16 @@ namespace pong
 
         static int currQuads;
         int myNum = 0;
-
+        bool used = false;;
 
     public:
         // 0 top left, 1 top right, 2 bot left, 3 bot right
         std::vector<QuadTree *> children{};
         std::vector<Component *> contained;
-        const int capacity;
         RectCollision collision;
         bool subdivided = false;
 
-        QuadTree(RectCollision &, int);
+        QuadTree(RectCollision  rootColl, int depth);
         ~QuadTree();
         void Insert(Component *, int);
         void Subdivide(std::vector<Component*>&);
@@ -48,7 +49,10 @@ namespace pong
         // Not needed right now
         void Query(BaseCollision *);  
 
+        void ClearNode();
+
         void Draw(raylib::Color, raylib::Color);
         void PrintDebug(int);
+        void CleanUp();
     };
 }
