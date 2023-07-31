@@ -10,13 +10,13 @@ It also allows using different entities with different logic without the overhea
 
 The current scene system splits the systems and entities of the game with transitions possible between them.
 
-![Menu](Menu.png)
+![Menu](images/Menu.png)
 *Main menu*
 
-![Game](Game.png)
+![Game](images/Game.png)
 *Game screen*
 
-![Win](Win.png)
+![Win](images/Win.png)
 *Win screen*
 
 # What's currently implmented?****
