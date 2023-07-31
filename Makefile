@@ -1,12 +1,10 @@
-
-# Preprocessor defs
+# Useful Preprocessor defs / flags
 # ggdb                 	-> enable debugging
 # DQUAD_COLLISION      	-> use quadtree collision over naive collision
 # DQUAD_COLLISION_DRAW 	-> draw collision quadtree recursively
-# DMAX_FPS=max fps 		-> The maximum FPS the main loop could run at.
-#						   -DMAX_FPS=0 is uncapped. FPS is capped at 60 if not specified
+# DMAX_FPS=max fps	-> The maximum FPS the main loop could run at.
+#			   -DMAX_FPS=0 is uncapped. FPS is capped at 60 if not specified
 defines := -ggdb -DQUAD_COLLISION_DRAW -DQUAD_COLLISION
-
 
 # Define custom functions
 rwildcard = $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
@@ -20,11 +18,13 @@ sources := $(call rwildcard,src/,*.cpp)
 objects := $(patsubst src/%, $(buildDir)/%, $(patsubst %.cpp, %.o, $(sources)))
 depends := $(patsubst %.o, %.d, $(objects))
 
-# Added -ggdb for enabling debugging, note that it causes less performance
-compileFlags := -std=c++17 -I C:\raylib\raylib\src 
+includeDirs := ./dependencies/raylib/include/ ./dependencies/raylib-cpp/include/ ./src/
+
+# https://stackoverflow.com/a/4134861
+compileFlags := -std=c++17 $(foreach d, $(includeDirs), -I$d) 
 compileFlags += $(defines)
 
-linkFlags = -L lib/$(platform) -l raylib
+linkFlags = -L./dependencies/raylib/lib/ -l:libraylib.a
 
 ifdef MACRO_DEFS
     macroDefines := -D $(MACRO_DEFS)
@@ -49,9 +49,8 @@ else
 		# Set Linux macros
 		platform := Linux
 		CXX ?= g++
-# Note: Must use -L/path/to/lib for static linking
-# https://stackoverflow.com/questions/9078513/how-do-you-properly-link-to-a-static-library-using-g
-		linkFlags += -l GL -l m -l pthread -l dl -l rt -l X11 -L/lib/Linux
+
+		linkFlags += -l GL -l m -l pthread -l dl -l rt -l X11
 	endif
 	ifeq ($(UNAMEOS), Darwin)
 		# Set macOS macros

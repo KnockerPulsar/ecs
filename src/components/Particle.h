@@ -1,11 +1,13 @@
 #pragma once
-#include "../../include/raylib-cpp/include/raylib-cpp.hpp"
-#include "Component.h"
+#include "raylib-cpp.hpp"
 #include <functional>
+
+#include "Component.h"
 #include "BallTrail.h"
-#include "../Entity.h"
-#include "../TUtils.h"
-#include "../System.h"
+#include "Entity.h"
+#include "TUtils.h"
+#include "System.h"
+
 #define DELET delete
 #define DeleteThreshold 20
 

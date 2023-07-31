@@ -1,15 +1,19 @@
 #pragma once
-#include "IScene.h"
-#include "raylib.h"
-#include "../include/raylib-cpp/include/raylib-cpp.hpp"
 
-#include <unordered_map>
 #include <vector>
 #include <string>
-#include "components/Paddle.h"
-#include "components/Ball.h"
+#include <unordered_map>
+
+#include "raylib.h"
+#include "raylib-cpp.hpp"
+
+#include "IScene.h"
 #include "System.h"
 #include "Entity.h"
+#include "Event.h"
+
+#include "components/Paddle.h"
+#include "components/Ball.h"
 #include "components/Component.h"
 #include "components/BaseCollision.h"
 #include "components/BallCollision.h"
@@ -17,7 +21,6 @@
 #include "components/ScoreDisplay.h"
 #include "components/Net.h"
 #include "components/BallTrail.h"
-#include "Event.h"
 
 namespace pong
 {

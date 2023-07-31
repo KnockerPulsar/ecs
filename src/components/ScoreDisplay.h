@@ -1,8 +1,9 @@
+#include "raylib-cpp.hpp"
+
 #include "Component.h"
-#include "../../include/raylib-cpp/include/raylib-cpp.hpp"
-#include "../Entity.h"
+#include "Entity.h"
 #include "Paddle.h"
-#include "../TUtils.h"
+#include "TUtils.h"
 
 namespace pong
 {

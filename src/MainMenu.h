@@ -1,8 +1,9 @@
 #pragma once
+#include <string>
+
+#include "raylib-cpp.hpp"
 #include "IScene.h"
 #include "Utils.h"
-#include <string>
-#include "../include/raylib-cpp/include/raylib-cpp.hpp"
 
 namespace pong
 {

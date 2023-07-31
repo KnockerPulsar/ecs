@@ -1,9 +1,10 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "../Tags.h"
-#include "../Utils.h"
-#include "../Entity.h"
+
+#include "Tags.h"
+#include "Utils.h"
+#include "Entity.h"
 
 // Abstract class to derive all components from
 namespace pong

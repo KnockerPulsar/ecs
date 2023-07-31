@@ -1,8 +1,8 @@
 #pragma once
-#include "../Utils.h"
+#include "Utils.h"
 #include "Component.h"
-#include "../../include/raylib-cpp/include/raylib-cpp.hpp"
-#include "../IScene.h"
+#include "raylib-cpp.hpp"
+#include "IScene.h"
 
 namespace pong
 {

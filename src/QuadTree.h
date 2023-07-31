@@ -1,5 +1,6 @@
-#include "../include/raylib-cpp/include/raylib-cpp.hpp"
 #include <vector>
+
+#include "raylib-cpp.hpp"
 #include "components/BaseCollision.h"
 #include "components/RectCollision.h"
 

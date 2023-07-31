@@ -1,6 +1,7 @@
-#pragma oncec
-#include "../include/raylib-cpp/include/raylib-cpp.hpp"
+#pragma once
 #include <string>
+
+#include "raylib-cpp.hpp"
 #include "Utils.h"
 #include "IScene.h"
 #include "MainGame.h"

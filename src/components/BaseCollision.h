@@ -1,9 +1,10 @@
 #pragma once
-#include "../../include/raylib-cpp/include/raylib-cpp.hpp"
-#include "Component.h"
-#include "raylib.h"
 #include <unordered_map>
 #include <vector>
+
+#include "raylib.h"
+#include "raylib-cpp.hpp"
+#include "Component.h"
 
 namespace pong {
 class RectCollision;

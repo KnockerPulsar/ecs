@@ -1,10 +1,12 @@
+#include <vector>
+
+#include "raylib.h"
+#include "raylib-cpp.hpp"
+
 #include "RectCollision.h"
 #include "BaseCollision.h"
 #include "BallCollision.h"
 #include "Component.h"
-#include <vector>
-#include "raylib.h"
-#include "../../include/raylib-cpp/include/raylib-cpp.hpp"
 
 namespace pong
 {
