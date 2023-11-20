@@ -1,0 +1,15 @@
+BasedOnStyle: LLVM
+AllowShortFunctionsOnASingleLine: true
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+TabWidth: 2
+IndentWidth: 2
+NamespaceIndentation: None
+BinPackArguments: false
+BinPackParameters: false
+ColumnLimit: 120
+BraceWrapping:
+  AfterStruct: true
+
+AlignAfterOpenBracket: BlockIndent
+AlwaysBreakTemplateDeclarations: Yes
