@@ -33,13 +33,57 @@ template <typename T> using Iter = typename std::vector<T>::iterator;
 
 class ECS {
 
-  std::unordered_map<std::type_index, std::any> component_vectors;
+  struct ComponentContainer {
+    std::unordered_map<std::type_index, std::any> component_vectors;
 
-  std::unordered_map<std::type_index, std::function<void(std::any &)>>
-      dummyPushers; // Need something to map a type id to a
-                    // std::vector<T>::push_back
+    // Need something to map a type id to a std::vector<T>::push_back
+    std::unordered_map<std::type_index, std::function<void(std::any &)>>
+        dummyPushers;
 
-  uint32_t numEntities = 0;
+    uint32_t numEntities = 0;
+
+    template <typename T> void lazilyInitComponentVector() {
+      auto &vec_any = component_vectors[typeid(T)];
+      if (!vec_any.has_value()) {
+        vec_any =
+            std::make_any<Vector<T>>(Vector<T>(numEntities, std::nullopt));
+      }
+    }
+
+    template <typename T> auto &getComponentVector() {
+      // NOTE: map::operator[] default constructs at whatever key you're looking
+      // up if there's no value there. In this case, it constructs an empty
+      // `std::any`
+      return std::any_cast<Vector<T> &>(component_vectors[typeid(T)]);
+    }
+
+    template <typename T> void lazilyRegisterDummyPusher() {
+      if (auto f = dummyPushers.find(typeid(T)); f == dummyPushers.end()) {
+        auto dummyPusher = [this](std::any &av) {
+          getComponentVector<T>().push_back(std::nullopt);
+        };
+
+        dummyPushers.insert({typeid(T), dummyPusher});
+      }
+    }
+
+    template <typename T> void addComponent(T comp) {
+      getComponentVector<T>()[numEntities] = comp;
+    }
+
+    template <typename... Ts> Entity addEntity(Ts &&...comps) {
+      (lazilyInitComponentVector<Ts>(), ...);
+      (lazilyRegisterDummyPusher<Ts>(), ...);
+
+      for (auto &[type_id, any] : component_vectors) {
+        dummyPushers[type_id](any);
+      }
+
+      (addComponent(std::forward<Ts>(comps)), ...);
+    }
+  };
+
+  ComponentContainer components;
 
   template <typename... Ts> struct MultiIterator {
     ECS &owner;
@@ -109,45 +153,13 @@ class ECS {
 
 public:
   template <typename... Ts> Entity addEntity(Ts &&...comps) {
-    (lazilyInitComponentVector<Ts>(), ...);
-    (lazilyRegisterDummyPusher<Ts>(), ...);
+    (components.addComponent(std::forward<Ts>(comps)), ...);
 
-    for (auto &[type_id, any] : component_vectors) {
-      dummyPushers[type_id](any);
-    }
-
-    (addComponent(std::forward<Ts>(comps)), ...);
-
-    numEntities += 1;
-    return numEntities - 1;
+    return components.numEntities;
   }
 
   template <typename T> auto &getComponentVector() {
-    // NOTE: map::operator[] default constructs at whatever key you're looking
-    // up if there's no value there. In this case, it constructs an empty
-    // `std::any`
-    return std::any_cast<Vector<T> &>(component_vectors[typeid(T)]);
-  }
-
-  template <typename T> void lazilyInitComponentVector() {
-    auto &vec_any = component_vectors[typeid(T)];
-    if (!vec_any.has_value()) {
-      vec_any = std::make_any<Vector<T>>(Vector<T>(numEntities, std::nullopt));
-    }
-  }
-
-  template <typename T> void lazilyRegisterDummyPusher() {
-    if (auto f = dummyPushers.find(typeid(T)); f == dummyPushers.end()) {
-      auto dummyPusher = [this](std::any &av) {
-        getComponentVector<T>().push_back(std::nullopt);
-      };
-
-      dummyPushers.insert({typeid(T), dummyPusher});
-    }
-  }
-
-  template <typename T> void addComponent(T comp) {
-    getComponentVector<T>()[numEntities] = comp;
+    return components.getComponentVector<T>();
   }
 
   template <typename... Ts, typename F> void forEach(F &&fn) {
