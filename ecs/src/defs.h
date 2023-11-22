@@ -17,4 +17,5 @@ template <typename T>
 using OptIter = typename Vector<T>::iterator;
 template <typename T>
 using Iter = typename std::vector<T>::iterator;
+
 } // namespace ecs

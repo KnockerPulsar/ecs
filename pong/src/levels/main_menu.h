@@ -20,7 +20,7 @@ struct CenterTextAnchor {};
 
 using Time = float;
 
-void noResource(ecs::Level::MultiIterator<Text> tt) {
+void noResource(ecs::ComponentIter<Text> tt) {
   for (auto &[t] : tt) {
     std::cout << t->titleText << std::endl;
   }
@@ -31,7 +31,7 @@ u32 horizontalTextCenter(const Text &tt) {
   return tt.x - offset;
 }
 
-void renderMainMenuText(ecs::Resources &r, ecs::Level::MultiIterator<Text, CenterTextAnchor> iter) {
+void renderMainMenuText(ecs::Resources &r, ecs::ComponentIter<Text, CenterTextAnchor> iter) {
   auto &time = r.getResource<Time>().value().get();
 
   BeginDrawing();

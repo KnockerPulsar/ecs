@@ -3,6 +3,8 @@
 // clang-format off
 #include "defs.h"
 #include "component_container.h"
+#include "multi_iterator.h"
+#include "commands.h"
 // clang-format on
 
 #include <algorithm>
@@ -20,18 +22,6 @@
 #include <utility>
 
 namespace ecs {
-struct Commands {
-  ComponentContainer  entitiesToAdd;
-  std::vector<Entity> entitiesToRemove;
-
-  template <typename... Ts>
-  void addEntity(Ts &&...comps) {
-    entitiesToAdd.addEntity(std::forward<Ts>(comps)...);
-  }
-
-  void removeEntity(Entity e) { entitiesToRemove.push_back(e); }
-};
-
 struct Resources {
   std::unordered_map<std::type_index, std::any> r;
 
@@ -53,132 +43,9 @@ template <typename... Ts>
 concept FirstNotResource = !std::is_same_v<ecs::Resources, std::tuple_element_t<0, std::tuple<Ts...>>>;
 
 struct Level {
-  template <typename T>
-  struct Resource {
-    T r;
-  };
-
   struct Transition {
     std::string           sourceLevel, destinationLevel;
     std::function<bool()> transitionCondition;
-  };
-
-  template <typename... Ts>
-  struct MultiIterator {
-
-    struct iterator {
-      std::tuple<OptIter<Ts>...> current;
-      std::tuple<Iter<Ts>...>    currentForInc;
-
-      iterator(std::tuple<OptIter<Ts>...> c) : current(c) {}
-
-      bool allSome() {
-        return std::apply([](auto &&...args) { return (args->has_value() && ...); }, current);
-      }
-
-      template <unsigned int N = sizeof...(Ts) - 1>
-      static void advance_all(std::tuple<OptIter<Ts>...> &iters) {
-        std::get<N>(iters)++;
-
-        if constexpr (N >= 1) {
-          advance_all<N - 1>(iters);
-        }
-      }
-
-      template <unsigned int N = 0, unsigned int NEnd = sizeof...(Ts) - 1>
-      static auto unwrapIterators(std::tuple<OptIter<Ts>...> iterTuple) {
-        using T = typename std::tuple_element<N, std::tuple<Ts...>>::type;
-        Iter<T>    comp_it(&(std::get<N>(iterTuple)->value()));
-        const auto t = std::make_tuple(comp_it);
-
-        if constexpr (N == NEnd) {
-          return t;
-        } else {
-          return std::tuple_cat(t, unwrapIterators<N + 1>(iterTuple));
-        }
-      }
-
-      std::tuple<OptIter<Ts>...> &optDeref() { return current; }
-      std::tuple<Iter<Ts>...>    &operator*() {
-           currentForInc = unwrapIterators(current);
-           return currentForInc;
-      }
-      std::tuple<Iter<Ts>...> *operator->() { return &unwrapIterators(current); }
-
-      iterator &operator++() {
-        advance_all(current);
-        return *this;
-      }
-
-      iterator operator++(int) {
-        auto temp = *this;
-        advance_all(current);
-        return temp;
-      }
-
-      friend bool operator==(const iterator &a, const iterator &b) { return a.current == b.current; }
-    };
-
-    Level   &owner;
-    iterator _begin, _end;
-
-    MultiIterator(Level &o) : owner(o), _begin(getBegins(std::tuple<Ts...>{})), _end(getEnds(std::tuple<Ts...>{})) {}
-
-    template <typename T2, typename... Ts2>
-    auto getBegins(std::tuple<T2, Ts2...> /*UNUSED*/) {
-      auto t_begin = std::make_tuple(owner.getComponentVector<T2>().begin());
-
-      if constexpr (sizeof...(Ts2) > 0) {
-        auto remaining = getBegins(std::tuple<Ts2...>{});
-        return std::tuple_cat(t_begin, remaining);
-      } else
-        return t_begin;
-    }
-
-    template <typename T2, typename... Ts2>
-    auto getEnds(std::tuple<T2, Ts2...> /*UNUSED*/) {
-      auto t_end = std::make_tuple(owner.getComponentVector<T2>().end());
-
-      if constexpr (sizeof...(Ts2) > 0) {
-        auto remaining = getEnds(std::tuple<Ts2...>{});
-        return std::tuple_cat(t_end, remaining);
-      } else
-        return t_end;
-    }
-
-    iterator begin() { return _begin; }
-    iterator end() { return _end; }
-
-    template <typename F>
-    void forEach(F &&fn) {
-      for (iterator iter = _begin; iter != _end; iter++) {
-        if (!iter.allSome())
-          continue;
-        std::apply(fn, *iter);
-      }
-    }
-
-    template <typename F>
-    void forEachMut(F &&fn, Commands &cmd) {
-      for (iterator iter = _begin; iter != _end; iter++) {
-        if (!iter.allSome())
-          continue;
-        auto paramTuple = std::tuple_cat(std::make_tuple(std::ref(cmd)), *iter);
-        std::apply(fn, paramTuple);
-      }
-    }
-
-    template <typename F>
-    void forEachMutId(F &&fn, Commands &cmd) {
-      auto eid = 0;
-      for (iterator iter = _begin; iter != _end; iter++) {
-        if (!iter.allSome())
-          continue;
-
-        auto paramTuple = std::tuple_cat(std::make_tuple(eid), std::make_tuple(std::ref(cmd)), *iter);
-        std::apply(fn, paramTuple);
-      }
-    }
   };
 
   ComponentContainer                        components;
@@ -213,9 +80,26 @@ struct Level {
     return components.getComponentVector<T>();
   }
 
-  template <typename... Ts, typename F>
-  void forEach(F &&fn) {
-    MultiIterator<Ts...>(*this).forEach(fn);
+  template <typename T2, typename... Ts2>
+  auto getBegins() {
+    auto t_begin = std::make_tuple(getComponentVector<T2>().begin());
+
+    if constexpr (sizeof...(Ts2) > 0) {
+      auto remaining = getBegins<Ts2...>();
+      return std::tuple_cat(t_begin, remaining);
+    } else
+      return t_begin;
+  }
+
+  template <typename T2, typename... Ts2>
+  auto getEnds() {
+    auto t_end = std::make_tuple(getComponentVector<T2>().end());
+
+    if constexpr (sizeof...(Ts2) > 0) {
+      auto remaining = getEnds<Ts2...>();
+      return std::tuple_cat(t_end, remaining);
+    } else
+      return t_end;
   }
 
   void copyComponents(Commands &cmd, Entity sourceId, Entity destId) {
@@ -237,28 +121,12 @@ struct Level {
     }
   }
 
-  template <typename... Ts, typename F>
-  void forEachMut(F &&fn) {
-    Commands cmd{};
-    MultiIterator<Ts...>(*this).forEachMut(fn, cmd);
-
-    processCommands(cmd);
-  }
-
-  template <typename... Ts, typename F>
-  void forEachMutId(F &&fn) {
-    Commands cmd{};
-    MultiIterator<Ts...>(*this).forEachMutId(fn, cmd);
-
-    processCommands(cmd);
-  }
-
   // Add system with access to resources.
   // checks if the first template parameter is of type `ecs::Resources`.
   template <typename R, typename... Ts, typename F>
   requires(std::is_same_v<R, ecs::Resources>) void addSystem(F &&fn) {
     systems.push_back([this, fn]() {
-      auto multiIter = MultiIterator<Ts...>{*this};
+      auto multiIter = MultiIterator<Ts...>{getBegins<Ts...>(), getEnds<Ts...>()};
       std::invoke(fn, std::ref(resources), multiIter);
     });
   }
@@ -268,7 +136,7 @@ struct Level {
   template <typename... Ts, typename F>
   requires(FirstNotResource<Ts...>) void addSystem(F &&fn) {
     systems.push_back([this, fn]() {
-      auto multiIter = MultiIterator<Ts...>{*this};
+      auto multiIter = MultiIterator<Ts...>{getBegins<Ts...>(), getEnds<Ts...>()};
       std::invoke(fn, multiIter);
     });
   }
@@ -281,6 +149,10 @@ struct Level {
   void runSystems() {
     for (auto &sys : systems) {
       sys();
+    }
+
+    if (auto cmd = resources.getResource<Commands>()) {
+      processCommands(*cmd);
     }
   }
 
@@ -296,9 +168,10 @@ struct Level {
   }
 };
 
-} // namespace ecs
+template <typename... Ts>
+using ComponentIter = MultiIterator<Ts...>;
 
-void demo() {
+void levelDemo() {
   ecs::Level level;
 
   struct Foo {
@@ -319,25 +192,41 @@ void demo() {
   level.addEntity(Baz{12.14});
   level.addEntity(Foo{122}, Baz{12.14});
 
-  level.forEach<Foo, Baz>([](auto f, auto b) { std::cout << f->x << " " << b->z << '\n'; });
-
-  std::cout << "===\n";
-
-  level.forEachMut<Foo, Baz>([](ecs::Commands &cmd, auto f, auto b) {
-    if (f->x > 100) {
-      cmd.addEntity(Foo{0}, Baz{100.0});
+  auto printFooBaz = [](ecs::ComponentIter<Foo, Baz> it) {
+    for (auto &[f, b] : it) {
+      std::cout << f->x << " " << b->z << '\n';
     }
-  });
 
-  level.forEach<Foo, Baz>([](auto f, auto b) { std::cout << f->x << " " << b->z << '\n'; });
+    std::cout << "===\n";
+  };
 
-  std::cout << "===\n";
-
-  level.forEachMutId<Foo, Baz>([](ecs::Entity selfId, ecs::Commands &cmd, auto f, auto b) {
-    if (b->z == 100) {
-      cmd.removeEntity(selfId);
+  auto addFoo = [](ecs::Resources &r, ecs::ComponentIter<Foo, Baz> it) {
+    auto &cmd = r.getResource<ecs::Commands>().value().get();
+    for (auto &[f, b] : it) {
+      // NOTE: Commands are processed after all systems run, thus we need to run this level at least twice to get the
+      // print to display.
+      if (f->x > 100) {
+        cmd.addEntity(Foo{0}, Baz{100.0});
+      }
     }
-  });
+  };
 
-  level.forEach<Foo, Baz>([](auto f, auto b) { std::cout << f->x << " " << b->z << '\n'; });
+  // TODO: Add a version of `addSystem` for Ids
+  /* auto removeFoo = [](ecs::Resources &r, ecs::Iter<Foo> f, ecs::Iter<Baz> b) { */
+  /*   auto &cmd = r.getResource<ecs::Commands>().value().get(); */
+  /*   if (b->z == 100) { */
+  /*     cmd.removeEntity(selfId); */
+  /*   } */
+  /* }; */
+
+  level.addResource(ecs::Commands{});
+  level.addSystem<Foo, Baz>(printFooBaz);
+  level.addSystem<ecs::Resources, Foo, Baz>(addFoo);
+  /* level.addSystem<ecs::Resources, Foo, Baz>(removeFoo); */
+  /* level.addSystem<Foo, Baz>(printFooBaz); */
+
+  for (int i = 0; i < 2; i++) {
+    level.runSystems();
+  }
 }
+} // namespace ecs
