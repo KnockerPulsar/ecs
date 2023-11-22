@@ -13,3 +13,6 @@ include/raylib-cpp/*
 
 !include/raylib-cpp/include
 
+ecs/build/
+ecs/build/
+**/.cache
