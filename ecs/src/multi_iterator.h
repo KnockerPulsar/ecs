@@ -20,6 +20,7 @@ struct MultiIterator {
     opt_value_type current, end;
     value_type     currentForInc; // Needed since we return a reference
 
+    iterator() = default;
     iterator(opt_value_type begin, opt_value_type end) : current(begin), end(end) {}
 
     static bool allSome(const opt_value_type &iter) {
@@ -56,7 +57,9 @@ struct MultiIterator {
     }
 
     reference operator*() {
-      currentForInc = unwrapIterators(current);
+      if(current != end) {
+	currentForInc = unwrapIterators(current);
+      }
       return currentForInc;
     }
 
@@ -71,34 +74,39 @@ struct MultiIterator {
     friend bool operator==(const iterator &a, const iterator &b) { return a.current == b.current && a.end == b.end; }
   };
 
-  MultiIterator(iterator::opt_value_type begin, iterator::opt_value_type end)
-      : _begin(prepareBegin(begin, end)), _end(prepareEnd(begin, end)) {}
+  MultiIterator(iterator::opt_value_type begin, iterator::opt_value_type end) {
+    auto validBegin = findValidStart(begin, end);
+    auto validEnd = findValidEnd(begin, end);
+
+    _begin = iterator(validBegin, validEnd);
+    _end = iterator(validEnd, validEnd);
+  }
 
   // Need to find the first iterator to have all components so dereferencing works properly.
   // If none exist, we'll return what's equivalent to `begin()`
-  static iterator prepareBegin(iterator::opt_value_type begin, iterator::opt_value_type end) {
+  static std::tuple<OptIter<Ts>...> findValidStart(iterator::opt_value_type begin, iterator::opt_value_type end) {
     for (auto current = begin; current != end; iterator::advance_all(current)) {
       if (iterator::allSome(current))
-        return iterator(current, end);
+        return current;
     }
 
-    return iterator(begin, end);
+    return begin;
   }
 
   // Need to find the last iterator to have all components so dereferencing works properly.
   // If none exist, we'll return what's equivalent to `begin()`
   // TODO: could probably be faster to start at the end and return on the first `allSome`, needs `iterator::retreat_all`
-  static iterator prepareEnd(iterator::opt_value_type begin, iterator::opt_value_type end) {
-    auto lastAnyNone = end;   // Should be called `firstAnyNoneAfterLastAllSome` but that's just too long
-    auto lagger      = begin; // One step behind
+  static std::tuple<OptIter<Ts>...> findValidEnd(iterator::opt_value_type begin, iterator::opt_value_type end) {
+    auto lastAllSome = begin;   // Should be called `firstAnyNoneAfterLastAllSome` but that's just too long
     auto current     = begin;
-    iterator::advance_all(current);
-    for (; current != end; iterator::advance_all(current), iterator::advance_all(lagger)) {
-      if (iterator::allSome(lagger) && !iterator::allSome(current))
-        lastAnyNone = current;
+    for (; current != end; iterator::advance_all(current)) {
+      if (iterator::allSome(current))
+        lastAllSome = current;
     }
 
-    return iterator(lastAnyNone, end);
+    iterator::advance_all(lastAllSome);
+
+    return lastAllSome;
   }
 
   iterator _begin, _end;
