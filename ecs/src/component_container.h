@@ -2,8 +2,11 @@
 
 #include "defs.h"
 
+#include <any>
 #include <functional>
+#include <optional>
 #include <typeindex>
+#include <iostream>
 
 namespace ecs {
 struct ComponentContainer {
@@ -23,7 +26,11 @@ struct ComponentContainer {
   uint32_t numEntities = 0;
 
   template <typename T>
-  Vector<T> &getComponentVector() {
+  std::optional<std::reference_wrapper<Vector<T>>> getComponentVector() {
+    if(!component_vectors.contains(typeid(T))) {
+      return {};
+    }
+
     // NOTE: map::operator[] default constructs at whatever key you're looking
     // up if there's no value there. In this case, it constructs an empty
     // `std::any`
@@ -48,29 +55,40 @@ struct ComponentContainer {
 private:
   template <typename T>
   void addComponent(T comp) {
-    getComponentVector<T>()[numEntities] = comp;
+    auto compVec = getComponentVector<T>();
+    compVec.value().get()[numEntities] = comp; 
   }
 
   template <typename T>
   void lazilyInitComponentVector() {
-    auto &vec_any = component_vectors[typeid(T)];
-    if (!vec_any.has_value()) {
-      vec_any = std::make_any<Vector<T>>(Vector<T>(numEntities, std::nullopt));
-    }
-  }
+    if(!component_vectors.contains(typeid(T))) {
+      component_vectors.insert({typeid(T), std::make_any<Vector<T>>(numEntities)});
+    } 
+ }
 
   template <typename T>
   void lazilyRegisterComponentOperations() {
     if (auto f = componentOperations.find(typeid(T)); f == componentOperations.end()) {
-      auto dummyPusher = [this]() { getComponentVector<T>().push_back(std::nullopt); };
-
-      auto moveComponent = [this](ComponentContainer &oth, Entity sourceId, Entity destId) {
-        auto &selfVec    = getComponentVector<T>();
-        auto &otherVec   = oth.getComponentVector<T>();
-        otherVec[destId] = std::move(selfVec[sourceId]);
+      auto dummyPusher = [this]() {
+	getComponentVector<T>().value().get().push_back(std::nullopt); 
       };
 
-      auto removeComponent = [this](Entity eid) { getComponentVector<T>()[eid] = std::nullopt; };
+      auto moveComponent = [this](ComponentContainer &oth, Entity sourceId, Entity destId) {
+        auto selfVec    = getComponentVector<T>();
+        auto otherVec   = oth.getComponentVector<T>();
+
+	// FIXME: Need to check if either vector doesn't exist
+        otherVec.value().get()[destId] = std::move(selfVec.value().get()[sourceId]);
+      };
+
+      auto removeComponent = [this](Entity eid) { 
+	auto compVec = getComponentVector<T>();
+	if(compVec) {
+	  compVec.value().get()[eid]= std::nullopt; 
+	} else {
+	  std::cerr << "Attempt to remove a component that doesn't exist.\n";
+	}
+      };
 
       componentOperations.insert({typeid(T), ComponentOperation{dummyPusher, moveComponent, removeComponent}});
     }

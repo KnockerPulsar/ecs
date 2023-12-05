@@ -36,6 +36,7 @@ struct MultiIterator {
       }
     }
 
+    // Converts from tuple<OptIter<T1>, OptIter<T2>, ...> to tuple<Iter<T1>, Iter<T2>, ...>
     template <unsigned int N = 0, unsigned int NEnd = sizeof...(Ts) - 1>
     static auto unwrapIterators(opt_value_type iterTuple) {
       using T = typename std::tuple_element<N, std::tuple<Ts...>>::type;

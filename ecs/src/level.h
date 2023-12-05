@@ -37,10 +37,50 @@ struct Resources {
 
     return std::any_cast<R &>(r.find(typeid(R))->second);
   }
+
+  template <typename R>
+  std::optional<R> consumeResource() {
+    if(!r.contains(typeid(R))) {
+      return {};
+    }
+
+    auto resIter = r.find(typeid(R));
+    auto resCopy = R(std::any_cast<R>(resIter->second));
+    r.erase(resIter);
+
+    return resCopy;
+  }
 };
 
 template <typename... Ts>
 concept FirstNotResource = !std::is_same_v<ecs::Resources, std::tuple_element_t<0, std::tuple<Ts...>>>;
+
+// Needed to work around C++ template deduction shinanigans
+// If it was a template function, the instantiation inside the else branch would be fn<Ts..., N+1>(...)
+// Which is interpreted as fn<Ts={Ts..., N+1}, 0, sizeof...(Ts)> (N+1 is interpreted to be a part of the parameter pack)
+// We can't move Ts to the end since NEnd depends on it being already defined.
+// We can move it to the middle:
+//  	template <unsigned int N = 0, typename ...Ts, unsigned int NEnd = sizeof...(Ts) - 1>
+//  	foo(...) {...}
+//
+// Then it would be called as: foo<0, Ts...>(optTuple)
+template<typename ...Ts>
+struct OptTupleUnwrapper {
+  // Converts from tuple<option<OptIter<T1>>, option<OptIter<T2>>, ...> to tuple<OptIter<T1>, OptIter<T2>, ...>
+  template <unsigned int N = 0, unsigned int NEnd = sizeof...(Ts) - 1>
+  static auto apply(std::tuple<std::optional<OptIter<Ts>>...>& optTuple) {
+    using T = typename std::tuple_element<N, std::tuple<Ts...>>::type;
+
+    OptIter<T>    comp_it(std::get<N>(optTuple).value());
+    const auto t = std::make_tuple(comp_it);
+
+    if constexpr (N == NEnd) {
+      return t;
+    } else {
+      return std::tuple_cat(t, apply<N + 1>(optTuple));
+    }
+  }
+};
 
 struct Level {
   struct Transition {
@@ -52,6 +92,7 @@ struct Level {
   std::vector<std::function<void()>>        systems;
   std::vector<std::function<void(Level &)>> setupSystems;
   Resources                                 resources;
+  bool 					    isSetup = false;
 
   Entity addEmptyEntity() {
     // Make space for the new entities
@@ -76,13 +117,21 @@ struct Level {
   }
 
   template <typename T>
-  auto &getComponentVector() {
+  std::optional<std::reference_wrapper<Vector<T>>> getComponentVector() {
     return components.getComponentVector<T>();
   }
 
   template <typename T2, typename... Ts2>
-  auto getBegins() {
-    auto t_begin = std::make_tuple(getComponentVector<T2>().begin());
+  std::tuple<std::optional<OptIter<T2>>, std::optional<OptIter<Ts2>>...> 
+  getBegins() {
+    auto compVec = getComponentVector<T2>();
+
+    std::tuple<std::optional<ecs::OptIter<T2>>> t_begin = 
+	  std::make_tuple(
+	      compVec.has_value()? 
+		compVec->get().begin()
+		: std::optional<ecs::OptIter<T2>>()
+	   );
 
     if constexpr (sizeof...(Ts2) > 0) {
       auto remaining = getBegins<Ts2...>();
@@ -92,9 +141,16 @@ struct Level {
   }
 
   template <typename T2, typename... Ts2>
-  auto getEnds() {
-    auto t_end = std::make_tuple(getComponentVector<T2>().end());
+  std::tuple<std::optional<OptIter<T2>>, std::optional<OptIter<Ts2>>...>
+  getEnds() {
+    auto compVec = getComponentVector<T2>();
 
+    std::tuple<std::optional<ecs::OptIter<T2>>> t_end = 
+	  std::make_tuple(
+	      compVec.has_value()? 
+		compVec->get().end()
+		: std::optional<ecs::OptIter<T2>>()
+	   );
     if constexpr (sizeof...(Ts2) > 0) {
       auto remaining = getEnds<Ts2...>();
       return std::tuple_cat(t_end, remaining);
@@ -120,14 +176,38 @@ struct Level {
       removeEntity(eid);
     }
   }
+  
+  // Add system with access to only to resources.
+  template <typename R, typename F>
+  requires(std::is_same_v<R, ecs::Resources>) void addSystem(F &&fn) {
+    systems.push_back([this, fn]() {
+      std::invoke(fn, std::ref(resources));
+    });
+  }
+
+  // Given a tuple of optional elements, returns true only if all elements have a value.
+  template <typename ...Ts>
+  static bool allComponentsExist(const  std::tuple<std::optional<OptIter<Ts>>...> &tuple) {
+    return std::apply([](auto &&...args) { return (args.has_value() && ...); }, tuple);
+  }
 
   // Add system with access to resources.
   // checks if the first template parameter is of type `ecs::Resources`.
   template <typename R, typename... Ts, typename F>
-  requires(std::is_same_v<R, ecs::Resources>) void addSystem(F &&fn) {
+  requires(std::is_same_v<R, ecs::Resources> && sizeof...(Ts) > 0) void addSystem(F &&fn) {
     systems.push_back([this, fn]() {
-      auto multiIter = MultiIterator<Ts...>{getBegins<Ts...>(), getEnds<Ts...>()};
-      std::invoke(fn, std::ref(resources), multiIter);
+      auto begins = getBegins<Ts...>();
+      auto ends = getEnds<Ts...>();
+
+      if(allComponentsExist<Ts...>(begins)) {
+	auto multiIter = MultiIterator<Ts...>{
+	  OptTupleUnwrapper<Ts...>::apply(begins), 
+	  OptTupleUnwrapper<Ts...>::apply(ends)
+	};
+	std::invoke(fn, std::ref(resources), multiIter);
+      } else {
+	std::cerr << "Attempt to run a system with no available components (" << typeid(std::tuple<Ts...>).name() << ").\n";
+      }
     });
   }
 
@@ -136,8 +216,18 @@ struct Level {
   template <typename... Ts, typename F>
   requires(FirstNotResource<Ts...>) void addSystem(F &&fn) {
     systems.push_back([this, fn]() {
-      auto multiIter = MultiIterator<Ts...>{getBegins<Ts...>(), getEnds<Ts...>()};
-      std::invoke(fn, multiIter);
+      auto begins = getBegins<Ts...>();
+      auto ends = getEnds<Ts...>();
+
+      if(allComponentsExist<Ts...>(begins)) {
+	auto multiIter = MultiIterator<Ts...>{
+	  OptTupleUnwrapper<Ts...>::apply(ends),
+	  OptTupleUnwrapper<Ts...>::apply(begins)
+	};
+	std::invoke(fn, multiIter);
+      } else {
+	std::cerr << "Attempt to run a system with no available components (" << typeid(std::tuple<Ts...>).name() << ").\n";
+      }
     });
   }
 

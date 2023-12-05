@@ -1,5 +1,6 @@
 #include "defs.h"
 #include "level.h"
+#include <functional>
 #include <unordered_map>
 
 namespace ecs {
@@ -48,8 +49,8 @@ public:
       const bool shouldTransition = transition.transitionCondition();
       if (shouldTransition) {
         // TODO: cleanup source and init destination?
-        std::cout << "transition\n";
         _currentLevel = transition.destinationLevel;
+	runSetupSystems();
       }
     }
   }
@@ -57,6 +58,14 @@ public:
   inline Level &currentLevel() { return levels.find(_currentLevel)->second; }
 
   void runSystems() { return currentLevel().runSystems(); }
-  void runSetupSystems() { return currentLevel().runSetupSystems(); }
+  void runSetupSystems() { return currentLevel().runSetupSystems(); currentLevel().isSetup = true; }
+
+  std::optional<std::reference_wrapper<Level>> getLevel(const std::string& levelName) { 
+      if (!levels.contains(levelName)) {
+	  return {};
+      }
+
+      return levels.find(levelName)->second;
+  }
 };
 } // namespace ecs
