@@ -1,17 +1,31 @@
+#pragma once
+
 #include "defs.h"
+#include "resources.h"
 #include "level.h"
 #include <functional>
+#include <type_traits>
 #include <unordered_map>
 
 namespace ecs {
 using LevelMap = std::unordered_map<std::string, Level>;
+
+struct GlobalResources: Resources {};
+
+template<typename F,typename R, typename ...Args>
+concept MatchSignature = std::is_invocable_v<F, Args...> && std::is_invocable_r_v<R, F, Args...>;
+
 class ECS {
   LevelMap                       levels;
   std::vector<Level::Transition> levelTransitions;
   std::string                    startLevel, _currentLevel;
 
+  GlobalResources 		 	globalResources;		// Resources shared between all levels.
+  std::vector<std::function<void()>> 	globalResourceSystemsPre; 	// Pre-frame systems
+  std::vector<std::function<void()>> 	globalResourceSystemsPost;	 // Post-frame systems
+
 public:
-  void addEmptyLevel(const std::string &levelName) { levels.insert({levelName, Level{}}); }
+  void addEmptyLevel(const std::string &levelName) { levels.insert({levelName, Level{.globalResources = globalResources}}); }
 
   template <typename F>
   void addSetupSystem(const std::string &levelName, F &&fn) {
@@ -67,5 +81,27 @@ public:
 
       return levels.find(levelName)->second;
   }
+
+  // To add global resources while setting up scenes.
+  template<typename R>
+  void addGlobalResource(R&& resource) {
+      globalResources.addResource(resource);
+  }
+
+  template<typename F>
+  requires(MatchSignature<F, void, GlobalResources&>)
+  void addGlobalResourceSystemPre(F&& sys) {
+    globalResourceSystemsPre.push_back([this, sys]() { std::invoke(sys, std::ref(globalResources)); });
+  }
+
+  template<typename F>
+  requires(MatchSignature<F, void, GlobalResources&>)
+  void addGlobalResourceSystemPost(F&& sys) {
+    globalResourceSystemsPost.push_back([this, sys]() { std::invoke(sys, std::ref(globalResources)); });
+  }
+
+  void runPreSystems() { for(auto& sys: globalResourceSystemsPre) sys(); }
+  void runPostSystems() { for(auto& sys: globalResourceSystemsPost) sys(); }
+
 };
 } // namespace ecs

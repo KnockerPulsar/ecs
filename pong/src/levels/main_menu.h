@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common.h"
+#include "level.h"
+#include "ecs.h"
 
 #include <functional>
 #include <string>
@@ -19,7 +21,7 @@ struct MainMenu {
 
     const static inline u32 optionVerticalStride = 60;
 
-    void handleInputs(ecs::Resources& r) {
+    void handleInputs(ecs::GlobalResources& r) {
       const auto& input = r.getResource<Input>()->get();
       if(input.wasKeyPressed(KEY_W)) {
 	selectedOption = (selectedOption + 1) % options.size();
@@ -38,7 +40,8 @@ struct MainMenu {
       }
     }
 
-    void drawOptions() {
+    void drawOptions(ecs::GlobalResources& r) {
+      auto& renderer = r.getResource<Renderer>()->get();
       for(u32 i = 0, yy = y + optionVerticalStride; 
 	  i < options.size(); 
 	  i++, yy+= optionVerticalStride
@@ -49,31 +52,28 @@ struct MainMenu {
 	opt.x = x; 
 	opt.y = yy;
 	opt.color = selected? RED: WHITE;
-	opt.drawCenterAligned();
+
+	renderer.textCommands.push_back(opt.drawCenterAligned());
       }
     }
 
-    static void update(ecs::Resources &r, ecs::ComponentIter<MainMenu> iter) {
+    static void update(ecs::GlobalResources &r, ecs::ComponentIter<MainMenu> iter) {
       for(auto& [m]: iter) {
 	m->handleInputs(r);
-	// Drawing
-	m->drawOptions();
+	m->drawOptions(r);
       }
     }
 };
 
-
-void renderPongLogo(ecs::Resources &r, ecs::ComponentIter<Text, TextAnimation, CenterTextAnchor> iter) {
+void renderPongLogo(ecs::GlobalResources &r, ecs::ComponentIter<Text, TextAnimation, CenterTextAnchor> iter) {
+  auto& renderer = r.getResource<Renderer>()->get();
   for (auto &[t, ta, tc] : iter) {
-    t->drawCenterAligned();
     ta->animate(r, t, ta->animationSpeed);
+    renderer.textCommands.push_back(t->drawCenterAligned());
   }
 }
 
 void setupMainMenu(ecs::Level &mm) {
-  mm.addResource<Time>(0.0);
-  mm.addResource<Input>(Input());
-
   mm.addEntity(
       Text{
 	  .text = "PONG",
@@ -90,18 +90,8 @@ void setupMainMenu(ecs::Level &mm) {
       .y = static_cast<u32>(GetScreenHeight() / 3),
   });
 
-  mm.addSystem<ecs::Resources>(Input::pollNewInputs);
-
   // Stuff that involves rendering
-  mm.addSystem<ecs::Resources>([](ecs::Resources&){ BeginDrawing(); ClearBackground(BLACK); });
-  mm.addSystem<ecs::Resources, Text, TextAnimation, CenterTextAnchor>(renderPongLogo);
-  mm.addSystem<ecs::Resources, MainMenu>(MainMenu::update);
-  mm.addSystem<ecs::Resources>([](ecs::Resources&){ EndDrawing(); });
-
-  mm.addSystem<ecs::Resources>(Input::onFrameEnd);
-  mm.addSystem<ecs::Resources>([](ecs::Resources& r) {
-      auto &time = r.getResource<Time>().value().get();
-      time += GetFrameTime();
-  });
+  mm.addSystem<ecs::GlobalResources, Text, TextAnimation, CenterTextAnchor>(renderPongLogo);
+  mm.addSystem<ecs::GlobalResources, MainMenu>(MainMenu::update);
 }
 } // namespace pong

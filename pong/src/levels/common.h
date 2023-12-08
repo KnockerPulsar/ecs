@@ -3,11 +3,39 @@
 #include "defs.h"
 #include "level.h"
 #include "raylib.h"
+#include "ecs.h"
 
 #include <cmath>
 
 namespace pong {
 using Time = float;
+
+struct Renderer {
+    struct RenderTextCommand { u32 x, y; std::string_view text; Color color; u32 fontSize; };
+    struct RenderRectCommand { u32 x, y, width, height; Color color; };
+
+    std::vector<RenderTextCommand> textCommands;
+    std::vector<RenderRectCommand> rectCommands;
+
+    static void system(ecs::GlobalResources& r) {
+	auto& self = r.getResource<Renderer>()->get();
+
+	BeginDrawing();
+	ClearBackground(BLACK);
+
+	for(const auto & tc: self.textCommands) {
+	    DrawText(tc.text.data(), tc.x, tc.y, tc.fontSize, tc.color);
+	}
+	self.textCommands.clear();
+
+	for(const auto & rc: self.rectCommands) {
+	    DrawRectangle(rc.x, rc.y, rc.width, rc.height, rc.color);
+	}
+	self.rectCommands.clear();
+
+	EndDrawing();
+    }
+};
 
 struct Text {
   std::string text;
@@ -23,18 +51,25 @@ struct Text {
     return tt.x - offset;
   }
 
-  void drawCenterAligned() const {
-    DrawText(text.c_str(), alignTextToCenter(*this), y, static_cast<int>(baseSize * fontScale), color);
+  [[nodiscard]]
+  Renderer::RenderTextCommand drawCenterAligned() const {
+    return Renderer::RenderTextCommand {
+	.x = alignTextToCenter(*this),
+	.y = y,
+	.text = text,
+	.color = color,
+	.fontSize = static_cast<u32>(baseSize * fontScale),
+    };
   }
 };
 
 struct TextAnimation { 
-  std::function<void(ecs::Resources&, ecs::Iter<Text>, float)> animate; 
+  std::function<void(ecs::GlobalResources&, ecs::Iter<Text>, float)> animate; 
   float animationSpeed;
 };
 
-void sinAnimation(ecs::Resources& r, ecs::Iter<Text> t, float animationSpeed) {
-  auto &time = r.getResource<Time>().value().get();
+void sinAnimation(ecs::GlobalResources& r, ecs::Iter<Text> t, float animationSpeed) {
+  auto &time = r.getResource<Time>()->get();
   t->fontScale = (std::sin(time * animationSpeed)) / 4 + 0.75;
 }
 
@@ -46,15 +81,15 @@ struct Input {
 	for(auto& f: prevFrameKeysDown) { f = false; }
     }
 
-    static void pollNewInputs(ecs::Resources& r) {
+    static void pollNewInputs(ecs::GlobalResources& r) {
 	auto& input = r.getResource<Input>().value().get();
 
-	for(int i = 0; i < input.frameKeysDown.size(); i++) {
+	for(u32 i = 0; i < input.frameKeysDown.size(); i++) {
 	    input.frameKeysDown[i] = IsKeyDown(static_cast<KeyboardKey>(i));
 	}
     }
 
-    static void onFrameEnd(ecs::Resources& r) {
+    static void onFrameEnd(ecs::GlobalResources& r) {
 	auto& input = r.getResource<Input>().value().get();
 	input.prevFrameKeysDown = input.frameKeysDown;
 
@@ -73,4 +108,5 @@ private:
     // Raylib's `KeyboardKey` enum has a maximum value of 348.
     std::array<bool, 348> frameKeysDown, prevFrameKeysDown;
 };
+
 }

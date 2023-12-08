@@ -13,9 +13,18 @@ using Entity = std::uint32_t;
 
 template <typename T>
 using Vector = typename std::vector<std::optional<T>>;
+
 template <typename T>
 using OptIter = typename Vector<T>::iterator;
+
 template <typename T>
 using Iter = typename std::vector<T>::iterator;
+
+// Forward decl
+template <typename... Ts>
+struct MultiIterator;
+
+template <typename... Ts>
+using ComponentIter = MultiIterator<Ts...>;
 
 } // namespace ecs

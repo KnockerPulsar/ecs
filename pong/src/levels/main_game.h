@@ -4,15 +4,14 @@
 
 namespace pong {
 
-void renderTestText(ecs::Resources &r, ecs::ComponentIter<Text, CenterTextAnchor> iter) {
+void renderTestText(ecs::GlobalResources &r, ecs::ComponentIter<Text, CenterTextAnchor> iter) {
+  auto& renderer = r.getResource<Renderer>()->get();
   for (auto &[t, tc] : iter) {
-    t->drawCenterAligned();
+    renderer.textCommands.push_back(t->drawCenterAligned());
   }
 }
-void setupMainGame(ecs::Level &mm) {
-  mm.addResource(Time{0.0});
-  mm.addResource(Input());
 
+void setupMainGame(ecs::Level &mm) {
   mm.addEntity(
       Text{
 	  .text = "Main Game",
@@ -23,18 +22,8 @@ void setupMainGame(ecs::Level &mm) {
       CenterTextAnchor{}
   );
 
-  mm.addSystem<ecs::Resources>(Input::pollNewInputs);
-
   // Stuff that involves rendering
-  mm.addSystem<ecs::Resources>([](ecs::Resources&){ BeginDrawing(); ClearBackground(BLACK); });
-  mm.addSystem<ecs::Resources, Text, CenterTextAnchor>(renderTestText);
-  mm.addSystem<ecs::Resources>([](ecs::Resources&){ EndDrawing(); });
-
-  mm.addSystem<ecs::Resources>(Input::onFrameEnd);
-  mm.addSystem<ecs::Resources>([](ecs::Resources& r) {
-      auto &time = r.getResource<Time>().value().get();
-      time += GetFrameTime();
-  });
-
+  mm.addSystem<ecs::GlobalResources, Text, CenterTextAnchor>(renderTestText);
 }
+
 };
