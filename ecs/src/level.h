@@ -24,6 +24,9 @@
 
 namespace ecs {
 
+template<typename ...Ts>
+using Query = std::tuple<Ts...>;
+
 // Just so we have a new type
 struct LevelResources : Resources {};
 
@@ -107,8 +110,9 @@ struct Level {
     return std::apply([](auto &&...args) { return (args.has_value() && ...); }, tuple);
   }
 
+  // General case, given a tuple of optional stuff, check if all elements have a value
   template <typename... Ts>
-  static bool allComponentsExist2(const std::tuple<std::optional<Ts>...> &tuple) {
+  static bool allComponentsExist(const std::tuple<std::optional<Ts>...> &tuple) {
     return std::apply([](auto &&...args) { return (args.has_value() && ...); }, tuple);
   }
 
@@ -123,61 +127,22 @@ struct Level {
   // Global resources + level resources
   // Global resourecs + level resources + components
 
-  // Add system WITHOUT access to resources.
-  template <typename... Ts, typename F>
-    requires(NoResources<Ts...>)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() {
-      auto begins = getBegins<Ts...>(*this);
-      auto ends   = getEnds<Ts...>(*this);
-
-      if (allComponentsExist<Ts...>(begins)) {
-        auto multiIter =
-            MultiIterator<Ts...>{OptTupleUnwrapper<Ts...>::apply(ends), OptTupleUnwrapper<Ts...>::apply(begins)};
-        std::invoke(fn, multiIter);
-      } else {
-        std::cerr << "Attempt to run a system with no available components (" << typeid(std::tuple<Ts...>).name()
-                  << ").\n";
-      }
-    });
-  }
-
   // Add system with access to only to level resources.
-  template <typename R, typename F>
-    requires(std::is_same_v<LevelResources, R>)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() { std::invoke(fn, std::ref(levelResources)); });
-  }
+  template <typename R, typename F> requires(std::is_same_v<LevelResources, R>)
+  void addSystem(F &&fn) { systems.push_back([this, fn]() { std::invoke(fn, std::ref(levelResources)); }); }
 
   // Add system with access to only to global resources.
-  template <typename R, typename F>
-    requires(std::is_same_v<GlobalResources, R>)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources)); });
-  }
+  template <typename R, typename F> requires(std::is_same_v<GlobalResources, R>)
+  void addSystem(F &&fn) { systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources)); }); }
 
-  // Add system with access to level resources + components.
-  template <typename R, typename... Ts, typename F>
-    requires(std::is_same_v<LevelResources, R> && sizeof...(Ts) > 0)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() {
-      auto begins = getBegins<Ts...>(*this);
-      auto ends   = getEnds<Ts...>(*this);
-
-      if (allComponentsExist<Ts...>(begins)) {
-        auto multiIter =
-            MultiIterator<Ts...>{OptTupleUnwrapper<Ts...>::apply(begins), OptTupleUnwrapper<Ts...>::apply(ends)};
-        std::invoke(fn, std::ref(levelResources), multiIter);
-      } else {
-        std::cerr << "Attempt to run a system with no available components (" << typeid(std::tuple<Ts...>).name()
-                  << ").\n";
-      }
-    });
-  }
+  // Add system with access to global resources and level resources, but not components.
+  template <typename R1, typename R2, typename F>
+    requires(std::is_same_v<GlobalResources, R1> && std::is_same_v<LevelResources, R2>)
+  void addSystem(F &&fn) { systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources), std::ref(levelResources)); }); }
 
   template <typename... Ts>
     requires(sizeof...(Ts) > 0)
-  std::optional<MultiIterator<Ts...>> getQueryIter(std::tuple<Ts...> && /*DUMMY*/) {
+  std::optional<MultiIterator<Ts...>> getQueryIter(Query<Ts...> && /*DUMMY*/) {
     auto begins = getBegins<Ts...>(*this);
     auto ends   = getEnds<Ts...>(*this);
 
@@ -190,6 +155,34 @@ struct Level {
     return MultiIterator<Ts...>{OptTupleUnwrapper(begins).apply(), OptTupleUnwrapper(ends).apply()};
   }
 
+  // Add system WITHOUT access to resources.
+  template <typename... Query, typename F>
+    requires(NoResources<Query...>)
+  void addSystem(F &&fn) {
+    systems.push_back([this, fn]() {
+      auto queryIters = std::make_tuple(getQueryIter(Query{})...);
+
+      if (allComponentsExist(queryIters)) {
+        const auto unwrappedIters = OptTupleUnwrapper(queryIters).apply();
+        std::apply(fn, unwrappedIters);
+      }
+    });
+  }
+
+  // Add system with access to level resources + components.
+  template <typename R, typename... Query, typename F>
+    requires(std::is_same_v<LevelResources, R> && sizeof...(Query) > 0)
+  void addSystem(F &&fn) {
+    systems.push_back([this, fn]() {
+      auto queryIters = std::make_tuple(getQueryIter(Query{})...);
+
+      if (allComponentsExist(queryIters)) {
+        const auto unwrappedIters = OptTupleUnwrapper(queryIters).apply();
+        std::apply(fn, std::tuple_cat(std::make_tuple(std::ref(levelResources)), unwrappedIters));
+      }
+    });
+  }
+
   // Add system with access to global resources + components.
   template <typename R, typename... Query, typename F>
     requires(std::is_same_v<GlobalResources, R> && sizeof...(Query) > 0)
@@ -197,64 +190,42 @@ struct Level {
     systems.push_back([this, fn]() {
       auto queryIters = std::make_tuple(getQueryIter(Query{})...);
 
-      if (allComponentsExist2(queryIters)) {
+      if (allComponentsExist(queryIters)) {
         const auto unwrappedIters = OptTupleUnwrapper(queryIters).apply();
         std::apply(fn, std::tuple_cat(std::make_tuple(std::ref(globalResources)), unwrappedIters));
       }
     });
   }
 
-  // Add system with access to global resources and level resources, but not components.
-  template <typename R1, typename R2, typename F>
-    requires(std::is_same_v<GlobalResources, R1> && std::is_same_v<LevelResources, R2>)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources), std::ref(levelResources)); });
-  }
-
   // Add system with access to global resources, level resources, and components.
-  template <typename R1, typename R2, typename... Ts, typename F>
-    requires(std::is_same_v<GlobalResources, R1> && std::is_same_v<LevelResources, R2> && sizeof...(Ts) > 0)
+  template <typename R1, typename R2, typename... Query, typename F>
+    requires(std::is_same_v<GlobalResources, R1> && std::is_same_v<LevelResources, R2> && sizeof...(Query) > 0)
   void addSystem(F &&fn) {
     systems.push_back([this, fn]() {
-      auto begins = getBegins<Ts...>(*this);
-      auto ends   = getEnds<Ts...>(*this);
+      auto queryIters = std::make_tuple(getQueryIter(Query{})...);
 
-      if (allComponentsExist<Ts...>(begins)) {
-        auto multiIter =
-            MultiIterator<Ts...>{OptTupleUnwrapper<Ts...>::apply(begins), OptTupleUnwrapper<Ts...>::apply(ends)};
-        std::invoke(fn, std::ref(globalResources), std::ref(levelResources), multiIter);
-      } else {
-        std::cerr << "Attempt to run a system with no available components (" << typeid(std::tuple<Ts...>).name()
-                  << ").\n";
+      if (allComponentsExist(queryIters)) {
+        const auto unwrappedIters = OptTupleUnwrapper(queryIters).apply();
+        std::apply(fn, std::tuple_cat(std::make_tuple(std::ref(globalResources), std::ref(levelResources)), unwrappedIters));
       }
     });
   }
 
-  template <typename F>
-  void addSetupSystem(F &&fn) {
-    setupSystems.push_back(fn);
-  }
-
   void runSystems() {
-    for (auto &sys : systems) {
-      sys();
-    }
+    for (auto &sys : systems) { sys(); }
 
     if (auto cmd = levelResources.getResource<Commands>()) {
       processCommands(*cmd);
     }
   }
 
-  void runSetupSystems() {
-    for (auto &setupSys : setupSystems) {
-      setupSys(*this);
-    }
-  }
+  template <typename F>
+  void addSetupSystem(F &&fn) { setupSystems.push_back(fn); }
+  void runSetupSystems() { for (auto &setupSys : setupSystems) { setupSys(*this); } }
 
   template <typename R>
-  void addResource(R initialValue) {
-    levelResources.addResource(initialValue);
-  }
+  void addResource(R initialValue) { levelResources.addResource(initialValue); }
+
 };
 
 // Needed to work around C++ template deduction shinanigans
@@ -270,12 +241,13 @@ template <typename... Ts>
 struct OptTupleUnwrapper {
   std::tuple<std::optional<Ts>...> &optTuple;
 
+  // Helps deduce the template parameters
   OptTupleUnwrapper(std::tuple<std::optional<Ts>...> &ot) : optTuple(ot) {}
 
   // Converts from tuple<option<OptIter<T1>>, option<OptIter<T2>>, ...> to tuple<OptIter<T1>, OptIter<T2>, ...>
   template <unsigned int N = 0, unsigned int NEnd = sizeof...(Ts) - 1>
   auto apply() {
-    using T = typename std::tuple_element<N, std::tuple<Ts...>>::type;
+    using T = Nth<N, Ts...>;
 
     T          unwrapped(std::get<N>(optTuple).value());
     const auto t = std::make_tuple(unwrapped);

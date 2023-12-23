@@ -109,8 +109,8 @@ void setupMainGame(ecs::GlobalResources &r, ecs::Level &mg) {
   );
 
   // Stuff that involves rendering
-  mg.addSystem<ecs::GlobalResources, std::tuple<Pos2D, Rect, Color>, std::tuple<Pos2D, Circle, Color>>(renderPlayers);
-  mg.addSystem<ecs::GlobalResources, std::tuple<Player, Pos2D>>(movePlayers);
+  mg.addSystem<ecs::GlobalResources, ecs::Query<Pos2D, Rect, Color>, ecs::Query<Pos2D, Circle, Color>>(renderPlayers);
+  mg.addSystem<ecs::GlobalResources, ecs::Query<Player, Pos2D>>(movePlayers);
 }
 
 }; // namespace pong

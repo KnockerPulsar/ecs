@@ -93,7 +93,7 @@ void setupMainMenu(ecs::GlobalResources &r, ecs::Level &mm) {
   });
 
   // Stuff that involves rendering
-  mm.addSystem<ecs::GlobalResources, std::tuple<Text, TextAnimation, CenterTextAnchor>>(renderPongLogo);
-  mm.addSystem<ecs::GlobalResources, std::tuple<MainMenu>>(MainMenu::update);
+  mm.addSystem<ecs::GlobalResources, ecs::Query<Text, TextAnimation, CenterTextAnchor>>(renderPongLogo);
+  mm.addSystem<ecs::GlobalResources, ecs::Query<MainMenu>>(MainMenu::update);
 }
 } // namespace pong
