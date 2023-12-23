@@ -11,19 +11,26 @@ struct Pos2D {
 };
 
 struct Rect {
-  u32   width, height;
-  Color color;
+  u32 width, height;
 };
 
-void renderPlayers(ecs::GlobalResources &r, ecs::ComponentIter<Pos2D, Rect> iter) {
+struct Sphere {
+  u32 radius;
+};
+
+const auto paddleWidth  = 20;
+const auto paddleHeight = 100;
+const auto paddleOffset = paddleWidth;
+
+void renderPlayers(ecs::GlobalResources &r, ecs::ComponentIter<Pos2D, Rect, Color> iter) {
   auto &renderer = r.getResource<Renderer>()->get();
-  for (const auto &[p, r] : iter) {
+  for (const auto &[p, r, c] : iter) {
     renderer.rectCommands.push_back(Renderer::RenderRectCommand{
         static_cast<u32>(p->x),
         static_cast<u32>(p->y),
         r->width,
         r->height,
-        r->color,
+        *c,
     });
   }
 };
@@ -32,18 +39,17 @@ void movePlayers(ecs::GlobalResources &r, ecs::ComponentIter<Player, Pos2D> iter
   const auto &inputs        = r.getResource<Input>()->get();
   const auto  dt            = r.getResource<DeltaTime>()->get();
   const auto  movementSpeed = 200.0f;
+  const auto  sh            = r.getResource<ScreenWidth>()->get();
 
   for (auto &[pl, pos] : iter) {
-    std::cout << static_cast<u8>(*pl) + 1 << "( " << pos->x << ',' << pos->y << ")\n";
-    std::cout << dt << '\n';
     switch (*pl) {
     case Player::One: {
 
-      if (inputs.isKeyDown(KEY_W)) {
+      if (inputs.isKeyDown(KEY_W) && pos->y > 0) {
         pos->y -= dt * movementSpeed;
       }
 
-      if (inputs.isKeyDown(KEY_S)) {
+      if (inputs.isKeyDown(KEY_S) && pos->y < (sh - paddleHeight)) {
         pos->y += dt * movementSpeed;
       }
 
@@ -51,11 +57,11 @@ void movePlayers(ecs::GlobalResources &r, ecs::ComponentIter<Player, Pos2D> iter
     }
     case Player::Two: {
 
-      if (inputs.isKeyDown(KEY_UP)) {
+      if (inputs.isKeyDown(KEY_UP) && pos->y > 0) {
         pos->y -= dt * movementSpeed;
       }
 
-      if (inputs.isKeyDown(KEY_DOWN)) {
+      if (inputs.isKeyDown(KEY_DOWN) && pos->y < (sh - paddleHeight)) {
         pos->y += dt * movementSpeed;
       }
 
@@ -65,13 +71,9 @@ void movePlayers(ecs::GlobalResources &r, ecs::ComponentIter<Player, Pos2D> iter
   }
 }
 
-void setupMainGame(ecs::Level &mg) {
-  const u32 sw = GetScreenWidth();
-  const u32 sh = GetScreenHeight();
-
-  const auto paddleWidth  = 20;
-  const auto paddleHeight = 100;
-  const auto paddleOffset = paddleWidth;
+void setupMainGame(ecs::GlobalResources &r, ecs::Level &mg) {
+  const u32 sw = r.getResource<ScreenWidth>()->get();
+  const u32 sh = r.getResource<ScreenHeight>()->get();
 
   mg.addEntity(
       Player::One,
@@ -79,7 +81,8 @@ void setupMainGame(ecs::Level &mg) {
           paddleOffset,
           static_cast<f32>((sh - paddleHeight) / 2.),
       },
-      Rect{paddleWidth, paddleHeight, RED}
+      Rect{paddleWidth, paddleHeight},
+      RED
   );
 
   mg.addEntity(
@@ -88,11 +91,12 @@ void setupMainGame(ecs::Level &mg) {
           static_cast<f32>(sw - 2. * paddleOffset),
           static_cast<f32>((sh - paddleHeight) / 2.),
       },
-      Rect{paddleWidth, paddleHeight, BLUE}
+      Rect{paddleWidth, paddleHeight},
+      BLUE
   );
 
   // Stuff that involves rendering
-  mg.addSystem<ecs::GlobalResources, Pos2D, Rect>(renderPlayers);
+  mg.addSystem<ecs::GlobalResources, Pos2D, Rect, Color>(renderPlayers);
   mg.addSystem<ecs::GlobalResources, Player, Pos2D>(movePlayers);
 }
 

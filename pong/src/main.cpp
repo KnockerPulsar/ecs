@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <string>
 
 int main() {
 
@@ -19,9 +20,12 @@ int main() {
 
   ecs::ECS ecs;
 
-  ecs.addGlobalResource(pong::Input{});
   ecs.addGlobalResource(pong::Time{0.0});
   ecs.addGlobalResource(pong::DeltaTime{1. / 60.});
+  ecs.addGlobalResource(pong::ScreenWidth(GetScreenWidth()));
+  ecs.addGlobalResource(pong::ScreenHeight(GetScreenHeight()));
+
+  ecs.addGlobalResource(pong::Input{});
   ecs.addGlobalResource(pong::Renderer{});
 
   ecs.addGlobalResourceSystemPre(pong::Input::pollNewInputs);
@@ -29,26 +33,31 @@ int main() {
   ecs.addGlobalResourceSystemPost(pong::Renderer::system);
   ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
   ecs.addGlobalResourceSystemPost([](ecs::GlobalResources &r) {
-    auto &dt = r.getResource<pong::DeltaTime>()->get();
-    dt       = GetFrameTime();
-  });
-  ecs.addGlobalResourceSystemPost([](ecs::GlobalResources &r) {
+    auto &dt   = r.getResource<pong::DeltaTime>()->get();
     auto &time = r.getResource<pong::Time>()->get();
+
+    dt = pong::DeltaTime(GetFrameTime());
     time += GetFrameTime();
   });
 
-  ecs.addEmptyLevel("main-menu");
-  ecs.addSetupSystem("main-menu", pong::setupMainMenu);
-  ecs.setStartLevel("main-menu");
+  const std::string mm = "main-menu";
+  ecs.addEmptyLevel(mm);
+  ecs.addSetupSystemRes(mm, pong::setupMainMenu);
+  ecs.setStartLevel(mm);
 
-  ecs.addEmptyLevel("main-game");
-  ecs.addSetupSystem("main-game", pong::setupMainGame);
+  const std::string mg = "main-game";
+  ecs.addEmptyLevel(mg);
+  ecs.addSetupSystemRes(mg, pong::setupMainGame);
 
   ecs.addTransition(ecs::Level::Transition{
-      .sourceLevel = "main-menu", .destinationLevel = "main-game", .transitionCondition = [&]() {
-        auto l = ecs.getLevel("main-menu").value().get();
-        return l.globalResources.consumeResource<pong::PlayChosen>().has_value();
-      }});
+      .sourceLevel      = mm,
+      .destinationLevel = mg,
+      .transitionCondition =
+          [&]() {
+            auto l = ecs.getLevel(mm).value().get();
+            return l.globalResources.consumeResource<pong::PlayChosen>().has_value();
+          },
+  });
 
   {
     if (!ecs.validateLevelTransitions()) {

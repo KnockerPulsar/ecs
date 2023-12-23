@@ -8,8 +8,23 @@
 #include <cmath>
 
 namespace pong {
-using Time      = f32;
-using DeltaTime = f32;
+
+template <typename T>
+struct Wrapper {
+  T value;
+
+  Wrapper(T &&v) : value(std::move(v)) {}
+  Wrapper(const T &v) : value(v) {}
+
+  // Allow automatic conversion to wrapped value
+  operator const T &() const { return value; }
+  operator T &() { return value; }
+};
+
+struct Time : public Wrapper<f32> {};
+struct DeltaTime : public Wrapper<f32> {};
+struct ScreenWidth : public Wrapper<u32> {};
+struct ScreenHeight : public Wrapper<u32> {};
 
 struct Renderer {
   struct RenderTextCommand {
