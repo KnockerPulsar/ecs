@@ -1,6 +1,7 @@
 #include "common.h"
 #include "defs.h"
 #include "ecs.h"
+#include "raylib.h"
 
 namespace pong {
 
@@ -14,7 +15,7 @@ struct Rect {
   u32 width, height;
 };
 
-struct Sphere {
+struct Circle {
   u32 radius;
 };
 
@@ -22,15 +23,21 @@ const auto paddleWidth  = 20;
 const auto paddleHeight = 100;
 const auto paddleOffset = paddleWidth;
 
-void renderPlayers(ecs::GlobalResources &r, ecs::ComponentIter<Pos2D, Rect, Color> iter) {
+void renderPlayers(ecs::GlobalResources &r, ecs::ComponentIter<Pos2D, Rect, Color> pIter, ecs::ComponentIter<Pos2D, Circle, Color> bIter) {
   auto &renderer = r.getResource<Renderer>()->get();
-  for (const auto &[p, r, c] : iter) {
+  for (const auto &[p, r, c] : pIter) {
     renderer.rectCommands.push_back(Renderer::RenderRectCommand{
         static_cast<u32>(p->x),
         static_cast<u32>(p->y),
         r->width,
         r->height,
         *c,
+    });
+  }
+
+  for (const auto& [p, s, c] : bIter) {
+    renderer.circleCommands.push_back(Renderer::RenderCircleCommand {
+        static_cast<u32>(p->x), static_cast<u32>(p->y), s->radius, *c
     });
   }
 };
@@ -95,9 +102,15 @@ void setupMainGame(ecs::GlobalResources &r, ecs::Level &mg) {
       BLUE
   );
 
+  mg.addEntity(
+      Pos2D { static_cast<f32>(sw/2.), static_cast<f32>(sh/2.) },
+      Circle { 30 },
+      WHITE
+  );
+
   // Stuff that involves rendering
-  mg.addSystem<ecs::GlobalResources, Pos2D, Rect, Color>(renderPlayers);
-  mg.addSystem<ecs::GlobalResources, Player, Pos2D>(movePlayers);
+  mg.addSystem<ecs::GlobalResources, std::tuple<Pos2D, Rect, Color>, std::tuple<Pos2D, Circle, Color>>(renderPlayers);
+  mg.addSystem<ecs::GlobalResources, std::tuple<Player, Pos2D>>(movePlayers);
 }
 
 }; // namespace pong

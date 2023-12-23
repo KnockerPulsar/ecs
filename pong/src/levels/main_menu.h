@@ -15,7 +15,9 @@ struct MainMenu {
 
   u32                 selectedOption = 0;
   std::array<Text, 2> options        = {
-      Text{.text = "Play", .color = WHITE, .baseSize = 40}, Text{.text = "Quit", .color = WHITE, .baseSize = 40}};
+      Text{.text = "Play", .color = WHITE, .baseSize = 40}, 
+      Text{.text = "Quit", .color = WHITE, .baseSize = 40},
+  };
 
   const static inline u32 optionVerticalStride = 60;
 
@@ -91,7 +93,7 @@ void setupMainMenu(ecs::GlobalResources &r, ecs::Level &mm) {
   });
 
   // Stuff that involves rendering
-  mm.addSystem<ecs::GlobalResources, Text, TextAnimation, CenterTextAnchor>(renderPongLogo);
-  mm.addSystem<ecs::GlobalResources, MainMenu>(MainMenu::update);
+  mm.addSystem<ecs::GlobalResources, std::tuple<Text, TextAnimation, CenterTextAnchor>>(renderPongLogo);
+  mm.addSystem<ecs::GlobalResources, std::tuple<MainMenu>>(MainMenu::update);
 }
 } // namespace pong

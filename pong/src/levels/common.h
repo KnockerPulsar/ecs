@@ -33,13 +33,20 @@ struct Renderer {
     Color            color;
     u32              fontSize;
   };
+
   struct RenderRectCommand {
     u32   x, y, width, height;
     Color color;
   };
 
+  struct RenderCircleCommand {
+    u32   x, y, radius;
+    Color color;
+  };
+
   std::vector<RenderTextCommand> textCommands;
   std::vector<RenderRectCommand> rectCommands;
+  std::vector<RenderCircleCommand> circleCommands;
 
   static void system(ecs::GlobalResources &r) {
     auto &self = r.getResource<Renderer>()->get();
@@ -54,6 +61,11 @@ struct Renderer {
 
     for (const auto &rc : self.rectCommands) {
       DrawRectangle(rc.x, rc.y, rc.width, rc.height, rc.color);
+    }
+    self.rectCommands.clear();
+
+    for (const auto &rs : self.circleCommands) {
+      DrawCircle(rs.x, rs.y, rs.radius, rs.color);
     }
     self.rectCommands.clear();
 
