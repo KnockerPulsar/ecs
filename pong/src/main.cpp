@@ -2,9 +2,9 @@
 #include "ecs.h"
 
 #include "level.h"
-#include "levels/main_menu.h"
-#include "levels/main_game.h"
 #include "levels/common.h"
+#include "levels/main_game.h"
+#include "levels/main_menu.h"
 
 #include "raylib.h"
 
@@ -21,16 +21,21 @@ int main() {
 
   ecs.addGlobalResource(pong::Input{});
   ecs.addGlobalResource(pong::Time{0.0});
+  ecs.addGlobalResource(pong::DeltaTime{1. / 60.});
   ecs.addGlobalResource(pong::Renderer{});
 
   ecs.addGlobalResourceSystemPre(pong::Input::pollNewInputs);
 
   ecs.addGlobalResourceSystemPost(pong::Renderer::system);
-  ecs.addGlobalResourceSystemPost([](ecs::GlobalResources& r) {
-      auto &time = r.getResource<pong::Time>().value().get();
-      time += GetFrameTime();
-  });
   ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
+  ecs.addGlobalResourceSystemPost([](ecs::GlobalResources &r) {
+    auto &dt = r.getResource<pong::DeltaTime>()->get();
+    dt       = GetFrameTime();
+  });
+  ecs.addGlobalResourceSystemPost([](ecs::GlobalResources &r) {
+    auto &time = r.getResource<pong::Time>()->get();
+    time += GetFrameTime();
+  });
 
   ecs.addEmptyLevel("main-menu");
   ecs.addSetupSystem("main-menu", pong::setupMainMenu);
@@ -40,13 +45,10 @@ int main() {
   ecs.addSetupSystem("main-game", pong::setupMainGame);
 
   ecs.addTransition(ecs::Level::Transition{
-      .sourceLevel = "main-menu",
-      .destinationLevel = "main-game",
-      .transitionCondition = [&]() {
-	auto l = ecs.getLevel("main-menu").value().get();
-	return l.globalResources.consumeResource<pong::PlayChosen>().has_value();
-      }
-  });
+      .sourceLevel = "main-menu", .destinationLevel = "main-game", .transitionCondition = [&]() {
+        auto l = ecs.getLevel("main-menu").value().get();
+        return l.globalResources.consumeResource<pong::PlayChosen>().has_value();
+      }});
 
   {
     if (!ecs.validateLevelTransitions()) {
