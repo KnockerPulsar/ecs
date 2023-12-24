@@ -24,7 +24,7 @@
 
 namespace ecs {
 
-template<typename ...Ts>
+template <typename... Ts>
 using Query = std::tuple<Ts...>;
 
 // Just so we have a new type
@@ -38,8 +38,8 @@ template <int N, typename... Ts>
 using Nth = typename std::tuple_element<N, std::tuple<Ts...>>::type;
 
 template <typename... Ts>
-concept NoResources =
-    !std::is_same_v<Nth<0, Ts...>, LevelResources> && !std::is_same_v<Nth<0, Ts...>, GlobalResources> &&
+concept NoResources = !
+std::is_same_v<Nth<0, Ts...>, LevelResources> && !std::is_same_v<Nth<0, Ts...>, GlobalResources> &&
     !std::is_same_v<Nth<1, Ts...>, LevelResources> && !std::is_same_v<Nth<1, Ts...>, GlobalResources>;
 
 template <typename... Ts>
@@ -128,17 +128,25 @@ struct Level {
   // Global resourecs + level resources + components
 
   // Add system with access to only to level resources.
-  template <typename R, typename F> requires(std::is_same_v<LevelResources, R>)
-  void addSystem(F &&fn) { systems.push_back([this, fn]() { std::invoke(fn, std::ref(levelResources)); }); }
+  template <typename R, typename F>
+    requires(std::is_same_v<LevelResources, R>)
+  void addSystem(F &&fn) {
+    systems.push_back([this, fn]() { std::invoke(fn, std::ref(levelResources)); });
+  }
 
   // Add system with access to only to global resources.
-  template <typename R, typename F> requires(std::is_same_v<GlobalResources, R>)
-  void addSystem(F &&fn) { systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources)); }); }
+  template <typename R, typename F>
+    requires(std::is_same_v<GlobalResources, R>)
+  void addSystem(F &&fn) {
+    systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources)); });
+  }
 
   // Add system with access to global resources and level resources, but not components.
   template <typename R1, typename R2, typename F>
     requires(std::is_same_v<GlobalResources, R1> && std::is_same_v<LevelResources, R2>)
-  void addSystem(F &&fn) { systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources), std::ref(levelResources)); }); }
+  void addSystem(F &&fn) {
+    systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources), std::ref(levelResources)); });
+  }
 
   template <typename... Ts>
     requires(sizeof...(Ts) > 0)
@@ -185,7 +193,9 @@ struct Level {
 
   // Add system with access to global resources + components.
   template <typename R, typename... Query, typename F>
-    requires(std::is_same_v<GlobalResources, R> && sizeof...(Query) > 0)
+    requires(
+        std::is_same_v<GlobalResources, R> && !std::is_same_v<Nth<0, Query...>, LevelResources> && sizeof...(Query) > 0
+    )
   void addSystem(F &&fn) {
     systems.push_back([this, fn]() {
       auto queryIters = std::make_tuple(getQueryIter(Query{})...);
@@ -206,13 +216,17 @@ struct Level {
 
       if (allComponentsExist(queryIters)) {
         const auto unwrappedIters = OptTupleUnwrapper(queryIters).apply();
-        std::apply(fn, std::tuple_cat(std::make_tuple(std::ref(globalResources), std::ref(levelResources)), unwrappedIters));
+        std::apply(
+            fn, std::tuple_cat(std::make_tuple(std::ref(globalResources), std::ref(levelResources)), unwrappedIters)
+        );
       }
     });
   }
 
   void runSystems() {
-    for (auto &sys : systems) { sys(); }
+    for (auto &sys : systems) {
+      sys();
+    }
 
     if (auto cmd = levelResources.getResource<Commands>()) {
       processCommands(*cmd);
@@ -220,12 +234,19 @@ struct Level {
   }
 
   template <typename F>
-  void addSetupSystem(F &&fn) { setupSystems.push_back(fn); }
-  void runSetupSystems() { for (auto &setupSys : setupSystems) { setupSys(*this); } }
+  void addSetupSystem(F &&fn) {
+    setupSystems.push_back(fn);
+  }
+  void runSetupSystems() {
+    for (auto &setupSys : setupSystems) {
+      setupSys(*this);
+    }
+  }
 
   template <typename R>
-  void addResource(R initialValue) { levelResources.addResource(initialValue); }
-
+  void addResource(R initialValue) {
+    levelResources.addResource(initialValue);
+  }
 };
 
 // Needed to work around C++ template deduction shinanigans

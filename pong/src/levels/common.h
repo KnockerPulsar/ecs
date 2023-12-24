@@ -13,6 +13,7 @@ template <typename T>
 struct Wrapper {
   T value;
 
+  Wrapper() = default;
   Wrapper(T &&v) : value(std::move(v)) {}
   Wrapper(const T &v) : value(v) {}
 
