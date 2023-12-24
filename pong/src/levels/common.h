@@ -53,7 +53,7 @@ struct Renderer {
     for (const auto &rs : self.circleCommands) {
       DrawCircle(rs.x, rs.y, rs.radius, rs.color);
     }
-    self.rectCommands.clear();
+    self.circleCommands.clear();
 
     EndDrawing();
   }
