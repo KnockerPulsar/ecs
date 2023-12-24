@@ -27,26 +27,12 @@ struct ScreenWidth : public Wrapper<u32> {};
 struct ScreenHeight : public Wrapper<u32> {};
 
 struct Renderer {
-  struct RenderTextCommand {
+  struct TextCommand {
     u32              x, y;
     std::string_view text;
     Color            color;
     u32              fontSize;
   };
-
-  struct RenderRectCommand {
-    u32   x, y, width, height;
-    Color color;
-  };
-
-  struct RenderCircleCommand {
-    u32   x, y, radius;
-    Color color;
-  };
-
-  std::vector<RenderTextCommand> textCommands;
-  std::vector<RenderRectCommand> rectCommands;
-  std::vector<RenderCircleCommand> circleCommands;
 
   static void system(ecs::GlobalResources &r) {
     auto &self = r.getResource<Renderer>()->get();
@@ -71,6 +57,37 @@ struct Renderer {
 
     EndDrawing();
   }
+
+  void drawText(const TextCommand& tc) {
+    textCommands.push_back(tc);
+  }
+
+  void drawText(u32 x, u32 y, std::string_view text, Color color, u32 fontSize) {
+    textCommands.push_back(TextCommand{x, y, text, color, fontSize});
+  }
+
+  void drawRect(u32 x, u32 y, u32 width, u32 height, Color color) {
+    rectCommands.push_back(RectCommand{x, y, width, height, color});
+  }
+
+  void drawCircle(u32 x, u32 y, u32 radius, Color color) {
+    circleCommands.push_back(CircleCommand{x, y, radius, color});
+  }
+
+private:
+  struct RectCommand {
+    u32   x, y, width, height;
+    Color color;
+  };
+
+  struct CircleCommand {
+    u32   x, y, radius;
+    Color color;
+  };
+
+  std::vector<TextCommand>   textCommands;
+  std::vector<RectCommand>   rectCommands;
+  std::vector<CircleCommand> circleCommands;
 };
 
 struct Text {
@@ -87,8 +104,8 @@ struct Text {
     return tt.x - offset;
   }
 
-  [[nodiscard]] Renderer::RenderTextCommand drawCenterAligned() const {
-    return Renderer::RenderTextCommand{
+  [[nodiscard]] Renderer::TextCommand drawCenterAligned() const {
+    return Renderer::TextCommand{
         .x        = alignTextToCenter(*this),
         .y        = y,
         .text     = text,

@@ -50,7 +50,7 @@ struct MainMenu {
       opt.y     = yy;
       opt.color = selected ? RED : WHITE;
 
-      renderer.textCommands.push_back(opt.drawCenterAligned());
+      renderer.drawText(opt.drawCenterAligned());
     }
   }
 
@@ -66,7 +66,7 @@ void renderPongLogo(ecs::GlobalResources &r, ecs::ComponentIter<Text, TextAnimat
   auto &renderer = r.getResource<Renderer>()->get();
   for (auto &[t, ta, tc] : iter) {
     ta->animate(r, t, ta->animationSpeed);
-    renderer.textCommands.push_back(t->drawCenterAligned());
+    renderer.drawText(t->drawCenterAligned());
   }
 }
 

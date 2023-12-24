@@ -26,19 +26,11 @@ const auto paddleOffset = paddleWidth;
 void renderPlayers(ecs::GlobalResources &r, ecs::ComponentIter<Pos2D, Rect, Color> pIter, ecs::ComponentIter<Pos2D, Circle, Color> bIter) {
   auto &renderer = r.getResource<Renderer>()->get();
   for (const auto &[p, r, c] : pIter) {
-    renderer.rectCommands.push_back(Renderer::RenderRectCommand{
-        static_cast<u32>(p->x),
-        static_cast<u32>(p->y),
-        r->width,
-        r->height,
-        *c,
-    });
+    renderer.drawRect(p->x, p->y, r->width, r->height, *c);
   }
 
   for (const auto& [p, s, c] : bIter) {
-    renderer.circleCommands.push_back(Renderer::RenderCircleCommand {
-        static_cast<u32>(p->x), static_cast<u32>(p->y), s->radius, *c
-    });
+    renderer.drawCircle(p->x, p->y, s->radius, *c);
   }
 };
 
