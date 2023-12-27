@@ -16,7 +16,7 @@
 
 int main() {
 
-  InitWindow(800, 400, "ecs-pong");
+  InitWindow(800, 800, "ecs-pong");
 
   ecs::ECS ecs;
 
@@ -36,7 +36,7 @@ int main() {
     auto &dt   = r.getResource<pong::DeltaTime>()->get();
     auto &time = r.getResource<pong::Time>()->get();
 
-    dt = pong::DeltaTime(GetFrameTime());
+    dt = pong::DeltaTime(std::min(GetFrameTime(), 1 / 60.0f));
     time += GetFrameTime();
   });
 
