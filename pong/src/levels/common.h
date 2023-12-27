@@ -4,6 +4,7 @@
 #include "ecs.h"
 #include "level.h"
 #include "raylib.h"
+#include "resources.h"
 
 #include <cmath>
 
@@ -35,8 +36,8 @@ struct Renderer {
     u32              fontSize;
   };
 
-  static void system(ecs::GlobalResources &r) {
-    auto &self = r.getResource<Renderer>()->get();
+  static void system(ecs::Resources &global) {
+    auto &self = global.getResource<Renderer>()->get();
 
     BeginDrawing();
     ClearBackground(BLACK);
@@ -59,9 +60,7 @@ struct Renderer {
     EndDrawing();
   }
 
-  void drawText(const TextCommand& tc) {
-    textCommands.push_back(tc);
-  }
+  void drawText(const TextCommand &tc) { textCommands.push_back(tc); }
 
   void drawText(u32 x, u32 y, std::string_view text, Color color, u32 fontSize) {
     textCommands.push_back(TextCommand{x, y, text, color, fontSize});
@@ -117,12 +116,12 @@ struct Text {
 };
 
 struct TextAnimation {
-  std::function<void(ecs::GlobalResources &, ecs::Iter<Text>, float)> animate;
-  float                                                               animationSpeed;
+  std::function<void(ecs::ResourceBundle, ecs::Iter<Text>, float)> animate;
+  float                                                            animationSpeed;
 };
 
-void sinAnimation(ecs::GlobalResources &r, ecs::Iter<Text> t, float animationSpeed) {
-  auto &time   = r.getResource<Time>()->get();
+void sinAnimation(ecs::ResourceBundle r, ecs::Iter<Text> t, float animationSpeed) {
+  auto &time   = r.global.getResource<Time>()->get();
   t->fontScale = (std::sin(time * animationSpeed)) / 4 + 0.75;
 }
 
@@ -138,16 +137,16 @@ struct Input {
     }
   }
 
-  static void pollNewInputs(ecs::GlobalResources &r) {
-    auto &input = r.getResource<Input>().value().get();
+  static void pollNewInputs(ecs::Resources &global) {
+    auto &input = global.getResource<Input>().value().get();
 
     for (u32 i = 0; i < input.frameKeysDown.size(); i++) {
       input.frameKeysDown[i] = IsKeyDown(static_cast<KeyboardKey>(i));
     }
   }
 
-  static void onFrameEnd(ecs::GlobalResources &r) {
-    auto &input             = r.getResource<Input>().value().get();
+  static void onFrameEnd(ecs::Resources &global) {
+    auto &input             = global.getResource<Input>().value().get();
     input.prevFrameKeysDown = input.frameKeysDown;
 
     for (auto &f : input.frameKeysDown) {

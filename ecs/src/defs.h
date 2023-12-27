@@ -6,7 +6,7 @@
 #include <vector>
 
 using u32 = uint32_t;
-using u8 = uint8_t;
+using u8  = uint8_t;
 using f32 = float;
 
 namespace ecs {
@@ -28,5 +28,8 @@ struct MultiIterator;
 
 template <typename... Ts>
 using ComponentIter = MultiIterator<Ts...>;
+
+template <typename Fn, typename Return, typename... Args>
+concept MatchSignature = std::is_invocable_r_v<Return, Fn, Args...>;
 
 } // namespace ecs

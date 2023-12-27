@@ -1,9 +1,9 @@
 #pragma once
 
-#include <functional>
-#include <typeindex>
-#include <optional>
 #include <any>
+#include <functional>
+#include <optional>
+#include <typeindex>
 
 namespace ecs {
 struct Resources {
@@ -24,7 +24,7 @@ struct Resources {
 
   template <typename R>
   std::optional<R> consumeResource() {
-    if(!r.contains(typeid(R))) {
+    if (!r.contains(typeid(R))) {
       return {};
     }
 
@@ -35,4 +35,9 @@ struct Resources {
     return resCopy;
   }
 };
-}
+
+struct ResourceBundle {
+  Resources &global, &level;
+};
+
+} // namespace ecs

@@ -13,3 +13,4 @@ BraceWrapping:
 
 AlignAfterOpenBracket: BlockIndent
 AlwaysBreakTemplateDeclarations: Yes
+IndentRequiresClause: false

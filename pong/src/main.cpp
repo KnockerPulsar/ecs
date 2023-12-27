@@ -32,7 +32,7 @@ int main() {
 
   ecs.addGlobalResourceSystemPost(pong::Renderer::system);
   ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
-  ecs.addGlobalResourceSystemPost([](ecs::GlobalResources &r) {
+  ecs.addGlobalResourceSystemPost([](ecs::Resources &r) {
     auto &dt   = r.getResource<pong::DeltaTime>()->get();
     auto &time = r.getResource<pong::Time>()->get();
 

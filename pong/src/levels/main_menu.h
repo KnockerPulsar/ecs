@@ -3,6 +3,7 @@
 #include "common.h"
 #include "ecs.h"
 #include "level.h"
+#include "resources.h"
 
 #include <functional>
 #include <string>
@@ -15,14 +16,14 @@ struct MainMenu {
 
   u32                 selectedOption = 0;
   std::array<Text, 2> options        = {
-      Text{.text = "Play", .color = WHITE, .baseSize = 40}, 
+      Text{.text = "Play", .color = WHITE, .baseSize = 40},
       Text{.text = "Quit", .color = WHITE, .baseSize = 40},
   };
 
   const static inline u32 optionVerticalStride = 60;
 
-  void handleInputs(ecs::GlobalResources &r) {
-    const auto &input = r.getResource<Input>()->get();
+  void handleInputs(ecs::ResourceBundle r) {
+    const auto &input = r.global.getResource<Input>()->get();
     if (input.wasKeyPressed(KEY_W)) {
       selectedOption = (selectedOption + 1) % options.size();
     }
@@ -36,12 +37,12 @@ struct MainMenu {
     }
 
     if (input.wasKeyPressed(KEY_ENTER) && selectedOption == 0) {
-      r.addResource(pong::PlayChosen{});
+      r.global.addResource(pong::PlayChosen{});
     }
   }
 
-  void drawOptions(ecs::GlobalResources &r) {
-    auto &renderer = r.getResource<Renderer>()->get();
+  void drawOptions(ecs::ResourceBundle r) {
+    auto &renderer = r.global.getResource<Renderer>()->get();
     for (u32 i = 0, yy = y + optionVerticalStride; i < options.size(); i++, yy += optionVerticalStride) {
       auto      &opt      = options[i];
       const auto selected = i == selectedOption;
@@ -54,7 +55,7 @@ struct MainMenu {
     }
   }
 
-  static void update(ecs::GlobalResources &r, ecs::ComponentIter<MainMenu> iter) {
+  static void update(ecs::ResourceBundle r, ecs::ComponentIter<MainMenu> iter) {
     for (auto &[m] : iter) {
       m->handleInputs(r);
       m->drawOptions(r);
@@ -62,19 +63,17 @@ struct MainMenu {
   }
 };
 
-void renderPongLogo(ecs::GlobalResources &r, ecs::ComponentIter<Text, TextAnimation, CenterTextAnchor> iter) {
-  auto &renderer = r.getResource<Renderer>()->get();
+void renderPongLogo(ecs::ResourceBundle r, ecs::ComponentIter<Text, TextAnimation, CenterTextAnchor> iter) {
+  auto &renderer = r.global.getResource<Renderer>()->get();
   for (auto &[t, ta, tc] : iter) {
     ta->animate(r, t, ta->animationSpeed);
     renderer.drawText(t->drawCenterAligned());
   }
 }
 
-void setupMainMenu(ecs::GlobalResources &r, ecs::Level &mm) {
-  const u32 sw = r.getResource<ScreenWidth>()->get();
-  const u32 sh = r.getResource<ScreenHeight>()->get();
-
-  std::cerr << sw << '\n' << sh << '\n';
+void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
+  const u32 sw = global.getResource<ScreenWidth>()->get();
+  const u32 sh = global.getResource<ScreenHeight>()->get();
 
   mm.addEntity(
       Text{
@@ -93,7 +92,7 @@ void setupMainMenu(ecs::GlobalResources &r, ecs::Level &mm) {
   });
 
   // Stuff that involves rendering
-  mm.addSystem<ecs::GlobalResources, ecs::Query<Text, TextAnimation, CenterTextAnchor>>(renderPongLogo);
-  mm.addSystem<ecs::GlobalResources, ecs::Query<MainMenu>>(MainMenu::update);
+  mm.addSystem<ecs::ResourceBundle, ecs::Query<Text, TextAnimation, CenterTextAnchor>>(renderPongLogo);
+  mm.addSystem<ecs::ResourceBundle, ecs::Query<MainMenu>>(MainMenu::update);
 }
 } // namespace pong

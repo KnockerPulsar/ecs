@@ -10,17 +10,12 @@
 namespace ecs {
 using LevelMap = std::unordered_map<std::string, Level>;
 
-struct GlobalResources : Resources {};
-
-template <typename F, typename R, typename... Args>
-concept MatchSignature = std::is_invocable_v<F, Args...> && std::is_invocable_r_v<R, F, Args...>;
-
 class ECS {
   LevelMap                       levels;
   std::vector<Level::Transition> levelTransitions;
   std::string                    startLevel, _currentLevel;
 
-  GlobalResources                    globalResources;           // Resources shared between all levels.
+  Resources                          globalResources;           // Resources shared between all levels.
   std::vector<std::function<void()>> globalResourceSystemsPre;  // Pre-frame systems
   std::vector<std::function<void()>> globalResourceSystemsPost; // Post-frame systems
 
@@ -84,7 +79,7 @@ public:
   void runSystems() { return currentLevel().runSystems(); }
   void runSetupSystems() {
     return currentLevel().runSetupSystems();
-    currentLevel().isSetup = true;
+    currentLevel().hasBeenSetup = true;
   }
 
   std::optional<std::reference_wrapper<Level>> getLevel(const std::string &levelName) {
@@ -102,13 +97,13 @@ public:
   }
 
   template <typename F>
-    requires(MatchSignature<F, void, GlobalResources &>)
+  requires(MatchSignature<F, void, Resources &>)
   void addGlobalResourceSystemPre(F &&sys) {
     globalResourceSystemsPre.push_back([this, sys]() { std::invoke(sys, std::ref(globalResources)); });
   }
 
   template <typename F>
-    requires(MatchSignature<F, void, GlobalResources &>)
+  requires(MatchSignature<F, void, Resources &>)
   void addGlobalResourceSystemPost(F &&sys) {
     globalResourceSystemsPost.push_back([this, sys]() { std::invoke(sys, std::ref(globalResources)); });
   }

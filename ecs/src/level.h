@@ -27,20 +27,12 @@ namespace ecs {
 template <typename... Ts>
 using Query = std::tuple<Ts...>;
 
-// Just so we have a new type
-struct LevelResources : Resources {};
-
-// Forward decl
-struct GlobalResources;
-
 // https://stackoverflow.com/a/29753388
 template <int N, typename... Ts>
 using Nth = typename std::tuple_element<N, std::tuple<Ts...>>::type;
 
 template <typename... Ts>
-concept NoResources = !
-std::is_same_v<Nth<0, Ts...>, LevelResources> && !std::is_same_v<Nth<0, Ts...>, GlobalResources> &&
-    !std::is_same_v<Nth<1, Ts...>, LevelResources> && !std::is_same_v<Nth<1, Ts...>, GlobalResources>;
+concept NoResources = !std::is_same_v<Nth<0, Ts...>, ResourceBundle>;
 
 template <typename... Ts>
 struct OptTupleUnwrapper;
@@ -51,12 +43,14 @@ struct Level {
     std::function<bool()> transitionCondition;
   };
 
-  ComponentContainer                        components;
+  ComponentContainer components;
+
   std::vector<std::function<void()>>        systems;
   std::vector<std::function<void(Level &)>> setupSystems;
-  LevelResources                            levelResources;
-  GlobalResources                          &globalResources; // Obtained from the ECS instance containing this level.
-  bool                                      isSetup = false;
+
+  Resources  levelResources;
+  Resources &globalResources; // Obtained from the ECS instance containing this level.
+  bool       hasBeenSetup = false;
 
   Entity addEmptyEntity() {
     // Make space for the new entities
@@ -116,40 +110,8 @@ struct Level {
     return std::apply([](auto &&...args) { return (args.has_value() && ...); }, tuple);
   }
 
-  // 3 possible inputs: Global resources, level resources, components
-  //
-  // Components
-  // Level resources
-  // Global resources
-  //
-  // Level resources + components
-  // Global resources + components
-  // Global resources + level resources
-  // Global resourecs + level resources + components
-
-  // Add system with access to only to level resources.
-  template <typename R, typename F>
-    requires(std::is_same_v<LevelResources, R>)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() { std::invoke(fn, std::ref(levelResources)); });
-  }
-
-  // Add system with access to only to global resources.
-  template <typename R, typename F>
-    requires(std::is_same_v<GlobalResources, R>)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources)); });
-  }
-
-  // Add system with access to global resources and level resources, but not components.
-  template <typename R1, typename R2, typename F>
-    requires(std::is_same_v<GlobalResources, R1> && std::is_same_v<LevelResources, R2>)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() { std::invoke(fn, std::ref(globalResources), std::ref(levelResources)); });
-  }
-
   template <typename... Ts>
-    requires(sizeof...(Ts) > 0)
+  requires(sizeof...(Ts) > 0)
   std::optional<MultiIterator<Ts...>> getQueryIter(Query<Ts...> && /*DUMMY*/) {
     auto begins = getBegins<Ts...>(*this);
     auto ends   = getEnds<Ts...>(*this);
@@ -163,9 +125,27 @@ struct Level {
     return MultiIterator<Ts...>{OptTupleUnwrapper(begins).apply(), OptTupleUnwrapper(ends).apply()};
   }
 
+  // 3 possible inputs: Global resources, level resources, components
+  //
+  // Components
+  // Level resources
+  // Global resources
+  //
+  // Level resources + components
+  // Global resources + components
+  // Global resources + level resources
+  // Global resourecs + level resources + components
+
+  // Add system with access to only to resources.
+  template <typename R, typename F>
+  requires(MatchSignature<F, void, R>)
+  void addSystem(F &&fn) {
+    systems.push_back([this, fn]() { std::invoke(fn, {.global = globalResources, .level = levelResources}); });
+  }
+
   // Add system WITHOUT access to resources.
   template <typename... Query, typename F>
-    requires(NoResources<Query...>)
+  requires(NoResources<Query...>)
   void addSystem(F &&fn) {
     systems.push_back([this, fn]() {
       auto queryIters = std::make_tuple(getQueryIter(Query{})...);
@@ -179,46 +159,15 @@ struct Level {
 
   // Add system with access to level resources + components.
   template <typename R, typename... Query, typename F>
-    requires(std::is_same_v<LevelResources, R> && sizeof...(Query) > 0)
+  requires(std::is_same_v<ResourceBundle, R> && sizeof...(Query) > 0)
   void addSystem(F &&fn) {
     systems.push_back([this, fn]() {
       auto queryIters = std::make_tuple(getQueryIter(Query{})...);
 
       if (allComponentsExist(queryIters)) {
         const auto unwrappedIters = OptTupleUnwrapper(queryIters).apply();
-        std::apply(fn, std::tuple_cat(std::make_tuple(std::ref(levelResources)), unwrappedIters));
-      }
-    });
-  }
-
-  // Add system with access to global resources + components.
-  template <typename R, typename... Query, typename F>
-    requires(
-        std::is_same_v<GlobalResources, R> && !std::is_same_v<Nth<0, Query...>, LevelResources> && sizeof...(Query) > 0
-    )
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() {
-      auto queryIters = std::make_tuple(getQueryIter(Query{})...);
-
-      if (allComponentsExist(queryIters)) {
-        const auto unwrappedIters = OptTupleUnwrapper(queryIters).apply();
-        std::apply(fn, std::tuple_cat(std::make_tuple(std::ref(globalResources)), unwrappedIters));
-      }
-    });
-  }
-
-  // Add system with access to global resources, level resources, and components.
-  template <typename R1, typename R2, typename... Query, typename F>
-    requires(std::is_same_v<GlobalResources, R1> && std::is_same_v<LevelResources, R2> && sizeof...(Query) > 0)
-  void addSystem(F &&fn) {
-    systems.push_back([this, fn]() {
-      auto queryIters = std::make_tuple(getQueryIter(Query{})...);
-
-      if (allComponentsExist(queryIters)) {
-        const auto unwrappedIters = OptTupleUnwrapper(queryIters).apply();
-        std::apply(
-            fn, std::tuple_cat(std::make_tuple(std::ref(globalResources), std::ref(levelResources)), unwrappedIters)
-        );
+        auto       rb             = ResourceBundle{.global = globalResources, .level = levelResources};
+        std::apply(fn, std::tuple_cat(std::make_tuple(rb), unwrappedIters));
       }
     });
   }

@@ -4,6 +4,7 @@
 #include "level.h"
 #include "raylib.h"
 #include "raymath.h"
+#include "resources.h"
 
 #include <cmath>
 #include <ios>
@@ -71,30 +72,37 @@ struct BallEvents : Wrapper<std::unordered_set<PlayerScored>> {};
 
 f32 sign(float x) { return x > 0 ? 1 : -1; }
 
-void renderPlayers(ecs::GlobalResources &r, ecs::ComponentIter<Pos2D, Rect, Color> pIter) {
-  auto &renderer = r.getResource<Renderer>()->get();
+void render(
+    ecs::ResourceBundle                      r,
+    ecs::ComponentIter<Pos2D, Rect, Color>   pIter,
+    ecs::ComponentIter<Pos2D, Circle, Color> bIter,
+    ecs::ComponentIter<PlayerScore>          sIter
+) {
+  auto &renderer = r.global.getResource<Renderer>()->get();
+
   for (const auto &[p, r, c] : pIter) {
     renderer.drawRect(p->x, p->y, r->width, r->height, *c);
   }
-};
-
-void renderBalls(ecs::GlobalResources &r, ecs::ComponentIter<Pos2D, Circle, Color> bIter) {
-  auto &renderer = r.getResource<Renderer>()->get();
 
   for (const auto &[p, s, c] : bIter) {
     renderer.drawCircle(p->x, p->y, s->radius, *c);
   }
+
+  for (auto &[ps] : sIter) {
+    renderer.drawText(ps->text.drawCenterAligned());
+  }
 };
 
 void handleInputs(
-    ecs::GlobalResources &r, ecs::ComponentIter<Player, Pos2D, Velocity> iter, ecs::ComponentIter<Circle, Pos2D> ball
+    ecs::ResourceBundle r, ecs::ComponentIter<Player, Pos2D, Velocity> iter, ecs::ComponentIter<Circle, Pos2D> ball
 ) {
-  const auto &inputs = r.getResource<Input>()->get();
-
   const auto playerMovementSpeed = 1200.0f;
-  const auto sh                  = r.getResource<ScreenWidth>()->get();
-  const auto time                = r.getResource<Time>()->get();
-  auto      &ts                  = r.getResource<TimeScale>()->get();
+
+  const auto &inputs = r.global.getResource<Input>()->get();
+  const auto  sh     = r.global.getResource<ScreenWidth>()->get();
+  const auto  time   = r.global.getResource<Time>()->get();
+
+  auto &ts = r.level.getResource<TimeScale>()->get();
 
   auto &[_, ballPosition] = *ball.begin();
 
@@ -127,7 +135,6 @@ void handleInputs(
     }
   }
 
-  std::cout << ts << "\n";
   if (inputs.wasKeyPressed(KEY_SPACE)) {
     if (ts == 0.1f)
       ts = TimeScale(1.0f);
@@ -136,20 +143,22 @@ void handleInputs(
   }
 }
 
-void moveObjects(ecs::GlobalResources &r, ecs::ComponentIter<Pos2D, Velocity> iter) {
-  const auto dt = r.getResource<DeltaTime>()->get();
-  const auto ts = r.getResource<TimeScale>()->get();
+void moveObjects(ecs::ResourceBundle r, ecs::ComponentIter<Pos2D, Velocity> iter) {
+  const auto dt = r.global.getResource<DeltaTime>()->get();
+  const auto ts = r.level.getResource<TimeScale>()->get();
+
   for (auto &[pos, vel] : iter) {
     pos->x += vel->x * dt * ts;
     pos->y += vel->y * dt * ts;
   }
 }
 
-void checkGoal(ecs::GlobalResources &gr, ecs::LevelResources &lr, ecs::ComponentIter<Circle, Pos2D, Velocity> iter) {
-  const auto sw         = gr.getResource<ScreenWidth>()->get();
-  const auto sh         = gr.getResource<ScreenHeight>()->get();
-  auto      &ballEvents = lr.getResource<BallEvents>()->get();
-  auto      &round      = lr.getResource<Round>()->get();
+void checkGoal(ecs::ResourceBundle r, ecs::ComponentIter<Circle, Pos2D, Velocity> iter) {
+  const auto sw = r.global.getResource<ScreenWidth>()->get();
+  const auto sh = r.global.getResource<ScreenHeight>()->get();
+
+  auto &ballEvents = r.level.getResource<BallEvents>()->get();
+  auto &round      = r.level.getResource<Round>()->get();
 
   for (auto &[c, p, v] : iter) {
     std::optional<Player> scoring = std::nullopt;
@@ -179,8 +188,8 @@ void checkGoal(ecs::GlobalResources &gr, ecs::LevelResources &lr, ecs::Component
   }
 }
 
-void onGoal(ecs::GlobalResources &gr, ecs::LevelResources &lr, ecs::ComponentIter<Pos2D, Player, PlayerScore> iter) {
-  auto &ballEvents = lr.getResource<BallEvents>()->get();
+void onGoal(ecs::ResourceBundle r, ecs::ComponentIter<Pos2D, Player, PlayerScore> iter) {
+  auto &ballEvents = r.level.getResource<BallEvents>()->get();
 
   for (const auto &be : ballEvents.value) {
     for (auto &[pp, p, ps] : iter) {
@@ -191,14 +200,6 @@ void onGoal(ecs::GlobalResources &gr, ecs::LevelResources &lr, ecs::ComponentIte
   }
 
   ballEvents.value.clear();
-}
-
-void renderScores(ecs::GlobalResources &r, ecs::ComponentIter<PlayerScore> iter) {
-  auto &renderer = r.getResource<Renderer>()->get();
-
-  for (auto &[ps] : iter) {
-    renderer.drawText(ps->text.drawCenterAligned());
-  }
 }
 
 void onBallHit(Pos2D &ballPosition, Velocity &ballVelocity, Pos2D &playerPosition, Rect &rect) {
@@ -283,12 +284,12 @@ void wallCollisions(Pos2D &ballPosition, Velocity &ballVelocity, Circle &circle,
 }
 
 void checkCollisions(
-    ecs::GlobalResources                       &r,
+    ecs::ResourceBundle                         r,
     ecs::ComponentIter<Circle, Pos2D, Velocity> balls,
     ecs::ComponentIter<Rect, Pos2D, Player>     players
 ) {
-  const auto dt = r.getResource<DeltaTime>()->get();
-  const auto sh = r.getResource<ScreenHeight>()->get();
+  const auto dt = r.global.getResource<DeltaTime>()->get();
+  const auto sh = r.global.getResource<ScreenHeight>()->get();
 
   // Note: The Y axis for raylib is top-bottom, the x axis is left-right
   for (const auto &[circle, ballPosition, ballVelocity] : balls) {
@@ -297,13 +298,13 @@ void checkCollisions(
   }
 }
 
-void setupMainGame(ecs::GlobalResources &r, ecs::Level &mg) {
+void setupMainGame(ecs::Resources global, ecs::Level &mg) {
 
-  const f32  sw     = r.getResource<ScreenWidth>()->get();
-  const f32  sh     = r.getResource<ScreenHeight>()->get();
+  const f32  sw     = global.getResource<ScreenWidth>()->get();
+  const f32  sh     = global.getResource<ScreenHeight>()->get();
   const auto scoreY = 20;
 
-  r.addResource(TimeScale{1.0f});
+  mg.addResource(TimeScale{1.0f});
 
   mg.addEntity(
       Player::One,
@@ -334,18 +335,21 @@ void setupMainGame(ecs::GlobalResources &r, ecs::Level &mg) {
   mg.addResource(BallEvents{});
   mg.addResource(Round{0});
 
-  // Stuff that involves rendering
-  mg.addSystem<ecs::GlobalResources, ecs::Query<Pos2D, Rect, Color>>(renderPlayers);
-  mg.addSystem<ecs::GlobalResources, ecs::Query<Pos2D, Circle, Color>>(renderBalls);
-  mg.addSystem<ecs::GlobalResources, ecs::Query<PlayerScore>>(renderScores);
+  mg.addSystem<ecs::ResourceBundle, ecs::Query<Player, Pos2D, Velocity>, ecs::Query<Circle, Pos2D>>(handleInputs);
 
-  mg.addSystem<ecs::GlobalResources, ecs::Query<Pos2D, Velocity>>(moveObjects);
-  mg.addSystem<ecs::GlobalResources, ecs::Query<Player, Pos2D, Velocity>, ecs::Query<Circle, Pos2D>>(handleInputs);
-  mg.addSystem<ecs::GlobalResources, ecs::Query<Circle, Pos2D, Velocity>, ecs::Query<Rect, Pos2D, Player>>(
+  mg.addSystem<ecs::ResourceBundle, ecs::Query<Pos2D, Velocity>>(moveObjects);
+  mg.addSystem<ecs::ResourceBundle, ecs::Query<Circle, Pos2D, Velocity>, ecs::Query<Rect, Pos2D, Player>>(
       checkCollisions
   );
 
-  mg.addSystem<ecs::GlobalResources, ecs::LevelResources, ecs::Query<Circle, Pos2D, Velocity>>(checkGoal);
-  mg.addSystem<ecs::GlobalResources, ecs::LevelResources, ecs::Query<Pos2D, Player, PlayerScore>>(onGoal);
+  // Stuff that involves rendering
+  mg.addSystem<
+      ecs::ResourceBundle,
+      ecs::Query<Pos2D, Rect, Color>,
+      ecs::Query<Pos2D, Circle, Color>,
+      ecs::Query<PlayerScore>>(render);
+
+  mg.addSystem<ecs::ResourceBundle, ecs::Query<Circle, Pos2D, Velocity>>(checkGoal);
+  mg.addSystem<ecs::ResourceBundle, ecs::Query<Pos2D, Player, PlayerScore>>(onGoal);
 }
 }; // namespace pong
