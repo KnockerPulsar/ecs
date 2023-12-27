@@ -10,6 +10,9 @@
 namespace ecs {
 using LevelMap = std::unordered_map<std::string, Level>;
 
+// Should be used to indicate that the main loop should exit
+struct Quit {};
+
 class ECS {
   LevelMap                       levels;
   std::vector<Level::Transition> levelTransitions;
@@ -112,9 +115,12 @@ public:
     for (auto &sys : globalResourceSystemsPre)
       sys();
   }
+
   void runPostSystems() {
     for (auto &sys : globalResourceSystemsPost)
       sys();
   }
+
+  bool shouldQuit() { return globalResources.getResource<Quit>().has_value(); }
 };
 } // namespace ecs

@@ -11,14 +11,16 @@
 namespace pong {
 struct PlayChosen {};
 
-struct MainMenu {
+struct MenuOption {
+  Text                                     text;
+  std::function<void(ecs::ResourceBundle)> onChosen;
+};
+
+struct MenuScreen {
   u32 x, y;
 
-  u32                 selectedOption = 0;
-  std::array<Text, 2> options        = {
-      Text{.text = "Play", .color = WHITE, .baseSize = 40},
-      Text{.text = "Quit", .color = WHITE, .baseSize = 40},
-  };
+  u32                     selectedOption = 0;
+  std::vector<MenuOption> options;
 
   const static inline u32 optionVerticalStride = 60;
 
@@ -36,8 +38,8 @@ struct MainMenu {
       }
     }
 
-    if (input.wasKeyPressed(KEY_ENTER) && selectedOption == 0) {
-      r.global.addResource(pong::PlayChosen{});
+    if (input.wasKeyPressed(KEY_ENTER)) {
+      options[selectedOption].onChosen(r);
     }
   }
 
@@ -47,15 +49,15 @@ struct MainMenu {
       auto      &opt      = options[i];
       const auto selected = i == selectedOption;
 
-      opt.x     = x;
-      opt.y     = yy;
-      opt.color = selected ? RED : WHITE;
+      opt.text.x     = x;
+      opt.text.y     = yy;
+      opt.text.color = selected ? RED : WHITE;
 
-      renderer.drawText(opt.drawCenterAligned());
+      renderer.drawText(opt.text.drawCenterAligned());
     }
   }
 
-  static void update(ecs::ResourceBundle r, ecs::ComponentIter<MainMenu> iter) {
+  static void update(ecs::ResourceBundle r, ecs::ComponentIter<MenuScreen> iter) {
     for (auto &[m] : iter) {
       m->handleInputs(r);
       m->drawOptions(r);
@@ -86,13 +88,21 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
       CenterTextAnchor{}
   );
 
-  mm.addEntity(MainMenu{
-      .x = static_cast<u32>(sw / 2.),
-      .y = static_cast<u32>(sh / 3.),
-  });
+  mm.addEntity(MenuScreen{
+      .x       = static_cast<u32>(sw / 2.),
+      .y       = static_cast<u32>(sh / 3.),
+      .options = {
+          MenuOption{
+              .text     = Text{.text = "Play", .color = WHITE, .baseSize = 40},
+              .onChosen = [](ecs::ResourceBundle r) { r.global.addResource(pong::PlayChosen{}); }},
+          MenuOption{
+              .text     = Text{.text = "Quit", .color = WHITE, .baseSize = 40},
+              .onChosen = [](ecs::ResourceBundle r) { r.global.addResource(ecs::Quit{}); },
+          },
+      }});
 
   // Stuff that involves rendering
   mm.addSystem<ecs::ResourceBundle, ecs::Query<Text, TextAnimation, CenterTextAnchor>>(renderPongLogo);
-  mm.addSystem<ecs::ResourceBundle, ecs::Query<MainMenu>>(MainMenu::update);
+  mm.addSystem<ecs::ResourceBundle, ecs::Query<MenuScreen>>(MenuScreen::update);
 }
 } // namespace pong
