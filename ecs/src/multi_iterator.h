@@ -1,13 +1,17 @@
 #pragma once
 
-#include "./commands.h"
-#include "./defs.h"
+#include "commands.h"
+#include "component_container.h"
+#include "defs.h"
+#include "level.h"
+#include "tuple_utils.h"
 
 #include <algorithm>
 #include <cassert>
 #include <functional>
 
 namespace ecs {
+
 template <typename... Ts>
 struct MultiIterator {
 
@@ -17,23 +21,15 @@ struct MultiIterator {
     using pointer        = value_type *;
     using reference      = value_type &;
 
-    opt_value_type current, end;
-    value_type     currentForInc; // Needed since we return a reference
+    uint                offset = 0, maxOffset = 0;
+    ComponentContainer *cc = nullptr;
+    value_type          refHolder;
 
     iterator() = default;
-    iterator(opt_value_type begin, opt_value_type end) : current(begin), end(end) {}
+    iterator(uint offset, uint maxOffset, ComponentContainer *cc) : offset(offset), maxOffset(maxOffset), cc(cc) {}
 
     static bool allSome(const opt_value_type &iter) {
       return std::apply([](auto &&...args) { return (args->has_value() && ...); }, iter);
-    }
-
-    template <unsigned int N = sizeof...(Ts) - 1>
-    static void advance_all(opt_value_type &iters) {
-      std::get<N>(iters)++;
-
-      if constexpr (N >= 1) {
-        advance_all<N - 1>(iters);
-      }
     }
 
     // Converts from tuple<OptIter<T1>, OptIter<T2>, ...> to tuple<Iter<T1>, Iter<T2>, ...>
@@ -49,22 +45,29 @@ struct MultiIterator {
         return std::tuple_cat(t, unwrapIterators<N + 1>(iterTuple));
       }
     }
+    void updateRefHolder(uint offset) {
+      refHolder = unwrapIterators(unwrapTuple(cc->getEntityComponents<Ts...>(offset)));
+    }
 
     iterator &operator++() {
+      bool shouldContinue = true;
       do {
-        advance_all(current);
-      } while (!allSome(current) && current != end);
+        offset++;
+        auto compTuple = cc->getEntityComponents<Ts...>(offset);
+        shouldContinue = !allSome(unwrapTuple(compTuple)) && offset != maxOffset;
+      } while (shouldContinue);
+
       return *this;
     }
 
     reference operator*() {
-      if(current != end) {
-	currentForInc = unwrapIterators(current);
-      }
-      return currentForInc;
+      updateRefHolder(offset);
+      return refHolder;
     }
-
-    pointer operator->() { return &unwrapIterators(current); }
+    pointer operator->() {
+      updateRefHolder(offset);
+      return &refHolder;
+    }
 
     iterator operator++(int) {
       auto temp = *this;
@@ -72,42 +75,43 @@ struct MultiIterator {
       return temp;
     }
 
-    friend bool operator==(const iterator &a, const iterator &b) { return a.current == b.current && a.end == b.end; }
+    friend bool operator==(const iterator &a, const iterator &b) {
+      return (a.offset == b.offset) && (a.maxOffset == b.maxOffset) && (a.cc == b.cc);
+    }
   };
 
-  MultiIterator(iterator::opt_value_type begin, iterator::opt_value_type end) {
-    auto validBegin = findValidStart(begin, end);
-    auto validEnd = findValidEnd(begin, end);
+  MultiIterator(ComponentContainer &cc) {
+    auto validBegin = findValidStart(cc);
+    auto validEnd   = findValidEnd(cc);
 
-    _begin = iterator(validBegin, validEnd);
-    _end = iterator(validEnd, validEnd);
+    _begin = iterator(validBegin, validEnd, &cc);
+    _end   = iterator(validEnd, validEnd, &cc);
   }
 
   // Need to find the first iterator to have all components so dereferencing works properly.
   // If none exist, we'll return what's equivalent to `begin()`
-  static std::tuple<OptIter<Ts>...> findValidStart(iterator::opt_value_type begin, iterator::opt_value_type end) {
-    for (auto current = begin; current != end; iterator::advance_all(current)) {
-      if (iterator::allSome(current))
+  static uint findValidStart(ComponentContainer &cc) {
+    for (auto current = 0; current != cc.numEntities; current++) {
+      if (iterator::allSome(unwrapTuple(cc.getEntityComponents<Ts...>(current))))
         return current;
     }
 
-    return begin;
+    return 0;
   }
 
   // Need to find the last iterator to have all components so dereferencing works properly.
   // If none exist, we'll return what's equivalent to `begin()`
   // TODO: could probably be faster to start at the end and return on the first `allSome`, needs `iterator::retreat_all`
-  static std::tuple<OptIter<Ts>...> findValidEnd(iterator::opt_value_type begin, iterator::opt_value_type end) {
-    auto lastAllSome = begin;   // Should be called `firstAnyNoneAfterLastAllSome` but that's just too long
-    auto current     = begin;
-    for (; current != end; iterator::advance_all(current)) {
-      if (iterator::allSome(current))
+  static uint findValidEnd(ComponentContainer &cc) {
+    // Should be called `firstAnyNoneAfterLastAllSome` but that's just too long
+    auto lastAllSome = 0;
+    auto current     = 0;
+    for (; current != cc.numEntities; current++) {
+      if (iterator::allSome(unwrapTuple(cc.getEntityComponents<Ts...>(current))))
         lastAllSome = current;
     }
 
-    iterator::advance_all(lastAllSome);
-
-    return lastAllSome;
+    return ++lastAllSome;
   }
 
   iterator _begin, _end;
