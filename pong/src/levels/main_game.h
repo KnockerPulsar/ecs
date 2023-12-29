@@ -11,13 +11,12 @@
 #include <unordered_set>
 
 namespace pong {
+enum class Player : u8 { One, AI };
 
 const auto ballSpeed    = 800;
 const auto paddleWidth  = 20;
 const auto paddleHeight = 100;
 const auto paddleOffset = paddleWidth;
-
-enum class Player : u8 { One, AI };
 
 struct Round : Wrapper<uint> {};
 struct TimeScale : Wrapper<float> {};
@@ -25,19 +24,15 @@ struct TimeScale : Wrapper<float> {};
 struct PlayerScored {
   Player scoringPlayer;
   bool   operator==(const PlayerScored &rhs) const = default;
+
+  struct Hasher {
+    std::size_t operator()(const pong::PlayerScored &be) const noexcept {
+      return static_cast<std::size_t>(be.scoringPlayer);
+    }
+  };
 };
 
-} // namespace pong
-
-// Custom specialization of std::hash can be injected in namespace std.
-template <>
-struct std::hash<pong::PlayerScored> {
-  std::size_t operator()(const pong::PlayerScored &be) const noexcept {
-    return static_cast<std::size_t>(be.scoringPlayer);
-  }
-};
-
-namespace pong {
+struct BallEvents : Wrapper<std::unordered_set<PlayerScored, PlayerScored::Hasher>> {};
 
 struct Pos2D : Vector2 {};
 struct Velocity : Vector2 {};
@@ -67,8 +62,6 @@ struct PlayerScore {
     text.text = std::to_string(score);
   }
 };
-
-struct BallEvents : Wrapper<std::unordered_set<PlayerScored>> {};
 
 f32 sign(float x) { return x > 0 ? 1 : -1; }
 

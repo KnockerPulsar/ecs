@@ -4,7 +4,7 @@ AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
 TabWidth: 2
 IndentWidth: 2
-NamespaceIndentation: None
+NamespaceIndentation: Inner
 BinPackArguments: false
 BinPackParameters: false
 ColumnLimit: 120
