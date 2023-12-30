@@ -16,11 +16,12 @@ const auto paddleWidth         = 20;
 const auto paddleHeight        = 100;
 const auto paddleOffset        = paddleWidth;
 const auto playerMovementSpeed = 1200.0f;
-const auto maxGoals            = 10;
+const auto maxGoals            = 2;
 const auto scoreY              = 20;
 
 enum class Player : u8 { Human, AI };
 
+struct Paused : Wrapper<bool> {};
 struct Round : Wrapper<uint> {};
 struct TimeScale : Wrapper<float> {};
 
@@ -33,6 +34,18 @@ struct PlayerScored {
       return static_cast<std::size_t>(be.scoringPlayer);
     }
   };
+};
+
+struct PauseScreen : MenuScreen {
+  void update(ecs::ResourceBundle r) {
+    this->MenuScreen::update(r);
+
+    auto      &renderer = r.global.getResource<Renderer>()->get();
+    const auto sw       = r.global.getResource<ScreenWidth>()->get();
+    const auto sh       = r.global.getResource<ScreenHeight>()->get();
+
+    renderer.drawRect(0, 0, sw, sh, ColorAlpha(BLACK, 0.7));
+  }
 };
 
 struct Pos2D : Vector2 {};
@@ -88,6 +101,12 @@ void render(
   for (auto &[ps] : sIter) {
     renderer.drawText(ps->text.drawCenterAligned());
   }
+
+  const auto paused = r.level.getResource<Paused>()->get();
+  if (paused) {
+    auto &pauseMenu = r.level.getResource<PauseScreen>()->get();
+    pauseMenu.update(r);
+  }
 };
 
 void moveAI(ecs::ResourceBundle r, Pos2D &pos, Pos2D &ballPosition, Velocity &vel) {
@@ -131,8 +150,6 @@ void handleInputs(
   const auto &inputs = r.global.getResource<Input>()->get();
   const auto  sh     = r.global.getResource<ScreenWidth>()->get();
 
-  auto &ts = r.level.getResource<TimeScale>()->get();
-
   auto [_, ballPosition] = *ball.begin();
 
   for (auto &[pl, pos, vel] : iter) {
@@ -160,14 +177,26 @@ void handleInputs(
   }
 
   if (inputs.wasKeyPressed(KEY_SPACE)) {
+    auto &ts = r.level.getResource<TimeScale>()->get();
     if (ts == 0.1f)
       ts = TimeScale(1.0f);
     else
       ts = TimeScale(0.1f);
   }
+
+  if (inputs.wasKeyPressed(KEY_ESCAPE)) {
+    auto &paused = r.level.getResource<Paused>()->get();
+    paused       = Paused(!paused);
+  }
 }
 
 void moveObjects(ecs::ResourceBundle r, ecs::ComponentIter<Pos2D, Velocity> iter) {
+  const auto paused = r.level.getResource<Paused>()->get();
+
+  if (paused) {
+    return;
+  }
+
   const auto dt = r.global.getResource<DeltaTime>()->get();
   const auto ts = r.level.getResource<TimeScale>()->get();
 
@@ -394,8 +423,37 @@ void setupMainGame(ecs::Resources global, ecs::Level &mg) {
 
   // Level resource initialization
   {
+    mg.addResource(Paused{false});
     mg.addResource(Round{0});
     mg.addResource(TimeScale{1.0f});
+
+    // Note the extra curly brace pair since we're wrapping a MenuScreen struct
+    mg.addResource(PauseScreen{{
+        .x = static_cast<u32>(sw / 2.),
+        .y = static_cast<u32>(sh / 2.),
+        .options =
+            {
+                {
+                    .text = Text{.text = "Unpause", .color = WHITE, .baseSize = 40},
+                    .onChosen =
+                        [](ecs::ResourceBundle r) {
+                          auto &paused = r.level.getResource<Paused>()->get();
+                          paused       = Paused(!paused);
+                        },
+                },
+                {
+                    .text = Text{.text = "Main Menu", .color = WHITE, .baseSize = 40},
+                    .onChosen =
+                        [](ecs::ResourceBundle r) {
+                          auto &paused = r.level.getResource<Paused>()->get();
+                          paused       = Paused(!paused);
+
+                          // Should allow the user to either quit or replay with another difficulty
+                          r.global.addResource(ecs::TransitionToScene(sceneNames::mainMenu));
+                        },
+                },
+            },
+    }});
   }
 
   // Per frame systems

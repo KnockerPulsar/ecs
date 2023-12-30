@@ -34,6 +34,8 @@ struct Resources {
 
     return resCopy;
   }
+
+  void clear() { r.clear(); }
 };
 
 struct ResourceBundle {

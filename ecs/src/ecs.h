@@ -93,7 +93,6 @@ public:
 
       const bool shouldTransition = transition.transitionCondition();
       if (shouldTransition) {
-        // TODO: cleanup source and init destination?
         transitionToLevel(transition.destinationLevel);
       }
     }

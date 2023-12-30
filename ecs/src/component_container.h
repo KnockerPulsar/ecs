@@ -21,7 +21,7 @@ struct ComponentContainer {
   friend class ECS;
   friend struct Commands;
 
-  std::unordered_map<std::type_index, std::any> component_vectors;
+  std::unordered_map<std::type_index, std::any> componentVectors;
 
   // Need something to map a type id to a std::vector<T>::push_back
   std::unordered_map<std::type_index, ComponentOperation> componentOperations;
@@ -30,14 +30,14 @@ struct ComponentContainer {
 
   template <typename T>
   std::optional<std::reference_wrapper<Vector<T>>> getComponentVector() {
-    if (!component_vectors.contains(typeid(T))) {
+    if (!componentVectors.contains(typeid(T))) {
       return {};
     }
 
     // NOTE: map::operator[] default constructs at whatever key you're looking
     // up if there's no value there. In this case, it constructs an empty
     // `std::any`
-    return std::any_cast<Vector<T> &>(component_vectors[typeid(T)]);
+    return std::any_cast<Vector<T> &>(componentVectors[typeid(T)]);
   }
 
   template <typename... Ts>
@@ -100,6 +100,12 @@ struct ComponentContainer {
     return MultiIterator<Ts...>(*this);
   }
 
+  void clear() {
+    componentVectors.clear();
+    componentOperations.clear();
+    numEntities = 0;
+  }
+
 private:
   template <typename T>
   void addComponent(T comp) {
@@ -109,8 +115,8 @@ private:
 
   template <typename T>
   void lazilyInitComponentVector() {
-    if (!component_vectors.contains(typeid(T))) {
-      component_vectors.insert({typeid(T), std::make_any<Vector<T>>(numEntities)});
+    if (!componentVectors.contains(typeid(T))) {
+      componentVectors.insert({typeid(T), std::make_any<Vector<T>>(numEntities)});
     }
   }
 

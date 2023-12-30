@@ -111,6 +111,15 @@ struct Level {
     setupSystems.push_back(fn);
   }
 
+  // Wipe the level clean, allowing setup systems to be run again;
+  void completeReset() {
+    components.clear();
+    perFrameSystems.clear();
+    resetSystems.clear();
+    levelResources.clear();
+    hasBeenSetup = false;
+  }
+
 private:
   Entity addEmptyEntity() {
     // Make space for the new entities
@@ -133,7 +142,7 @@ private:
   }
 
   void copyComponents(Commands &cmd, Entity sourceId, Entity destId) {
-    for (auto &[typeId, anyVec] : cmd.entitiesToAdd.component_vectors) {
+    for (auto &[typeId, anyVec] : cmd.entitiesToAdd.componentVectors) {
       cmd.entitiesToAdd.componentOperations[typeId].moveComponent(components, sourceId, destId);
     }
   }

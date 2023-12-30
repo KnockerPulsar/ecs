@@ -58,7 +58,7 @@ int main() {
   }
 
   ecs.runSetupSystems();
-  while (!(WindowShouldClose() || ecs.shouldQuit())) {
+  while (!ecs.shouldQuit()) {
     ecs.checkTransitions();
 
     ecs.runPreSystems();

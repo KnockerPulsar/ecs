@@ -49,5 +49,7 @@ void setupGameOver(ecs::Resources &global, ecs::Level &go) {
   go.addResource(ScreenManager{.screens = {gameOverMenu}});
   go.addPerFrameSystem<ecs::ResourceBundle, ecs::Query<Text, TextAnimation, CenterText>>(renderMenuTitle);
   go.addPerFrameSystem<ecs::ResourceBundle>(ScreenManager::update);
+
+  go.addResetSystem<ecs::ResourceBundle>([&go](ecs::ResourceBundle r) { go.completeReset(); });
 }
 } // namespace pong

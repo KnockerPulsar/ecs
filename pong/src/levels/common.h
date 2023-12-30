@@ -47,12 +47,8 @@ struct Renderer {
     auto &self = global.getResource<Renderer>()->get();
 
     BeginDrawing();
+    BeginBlendMode(BLEND_ALPHA);
     ClearBackground(BLACK);
-
-    for (const auto &tc : self.textCommands) {
-      DrawText(tc.text.data(), tc.x, tc.y, tc.fontSize, tc.color);
-    }
-    self.textCommands.clear();
 
     for (const auto &rc : self.rectCommands) {
       DrawRectangle(rc.x, rc.y, rc.width, rc.height, rc.color);
@@ -64,6 +60,12 @@ struct Renderer {
     }
     self.circleCommands.clear();
 
+    for (const auto &tc : self.textCommands) {
+      DrawText(tc.text.data(), tc.x, tc.y, tc.fontSize, tc.color);
+    }
+    self.textCommands.clear();
+
+    EndBlendMode();
     EndDrawing();
   }
 
