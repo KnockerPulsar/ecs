@@ -11,6 +11,7 @@
 namespace pong {
 
 struct PlayChosen {};
+struct ControlsChosen {};
 enum class AIDifficulty { Easy, Medium, Hard };
 
 struct ScreenManager {
@@ -64,6 +65,10 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
                   .onChosen = [](ecs::ResourceBundle r) { r.level.addResource(pong::PlayChosen{}); },
               },
               {
+                  .text     = Text{.text = "Controls"},
+                  .onChosen = [](ecs::ResourceBundle r) { r.level.addResource(pong::ControlsChosen{}); },
+              },
+              {
                   .text     = Text{.text = "Quit"},
                   .onChosen = [](ecs::ResourceBundle r) { r.global.addResource(ecs::Quit{}); },
               },
@@ -102,12 +107,43 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
           },
   };
 
+  auto controlsScreen = MenuScreen{
+      .x = static_cast<u32>(sw / 2.),
+      .y = static_cast<u32>(sh / 2.33),
+      .options =
+          {
+              {
+                  .text     = Text{.text = "Back"},
+                  .onChosen = [](ecs::ResourceBundle r
+                              ) { r.global.addResource(ecs::TransitionToScene(pong::sceneNames::mainMenu)); },
+              },
+          },
+
+      .staticContent = {
+          {
+              Text{
+                  .text     = "W/S or Up/Down arrows to move paddle/menu option",
+                  .color    = WHITE,
+                  .baseSize = 25,
+              },
+              Text{
+                  .text     = "Enter to chose menu option, Escape to open pause menu",
+                  .color    = WHITE,
+                  .baseSize = 25,
+              },
+          },
+      }};
+
   mm.addResource(ScreenManager{
-      .screens = {mainMenu, difficultyMenu},
+      .screens = {mainMenu, difficultyMenu, controlsScreen},
       .handleTransitions =
           [](ScreenManager &self, ecs::ResourceBundle r) {
             if (auto playChosen = r.level.consumeResource<PlayChosen>()) {
               self.currentScreen = 1;
+            }
+
+            if (auto controlsChosen = r.level.consumeResource<ControlsChosen>()) {
+              self.currentScreen = 2;
             }
           },
   });

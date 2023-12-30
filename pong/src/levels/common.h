@@ -187,6 +187,7 @@ struct MenuScreen {
 
   u32                 selectedOption = 0;
   std::vector<Option> options;
+  std::vector<Text>   staticContent;
 
   const static inline u32 optionVerticalStride = 60;
 
@@ -211,7 +212,17 @@ struct MenuScreen {
 
   void drawOptions(ecs::ResourceBundle r) {
     auto &renderer = r.global.getResource<Renderer>()->get();
-    for (u32 i = 0, yy = y + optionVerticalStride; i < options.size(); i++, yy += optionVerticalStride) {
+    auto  yy       = y + optionVerticalStride;
+
+    for (u32 i = 0; i < staticContent.size(); i++, yy += optionVerticalStride) {
+      auto &s = staticContent[i];
+      s.x     = x;
+      s.y     = yy;
+
+      renderer.drawText(s.drawCenterAligned());
+    }
+
+    for (u32 i = 0; i < options.size(); i++, yy += optionVerticalStride) {
       auto      &opt      = options[i];
       const auto selected = i == selectedOption;
 
