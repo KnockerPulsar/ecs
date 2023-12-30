@@ -11,7 +11,7 @@ struct Resources {
 
   template <typename R>
   void addResource(R initialValue) {
-    r.insert({typeid(R), initialValue});
+    r.insert_or_assign(typeid(R), initialValue);
   }
 
   template <typename R>

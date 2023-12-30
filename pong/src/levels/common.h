@@ -10,6 +10,12 @@
 
 namespace pong {
 
+namespace sceneNames {
+  const std::string mainMenu = "main-menu";
+  const std::string mainGame = "main-game";
+  const std::string gameOver = "game-over";
+} // namespace sceneNames
+
 template <typename T>
 struct Wrapper {
   T value;
@@ -27,6 +33,7 @@ struct Time : public Wrapper<f32> {};
 struct DeltaTime : public Wrapper<f32> {};
 struct ScreenWidth : public Wrapper<u32> {};
 struct ScreenHeight : public Wrapper<u32> {};
+enum class GameResult : u8 { Won, Lost };
 
 struct Renderer {
   struct TextCommand {
@@ -125,7 +132,7 @@ void sinAnimation(ecs::ResourceBundle r, ecs::Iter<Text> t, float animationSpeed
   t->fontScale = (std::sin(time * animationSpeed)) / 4 + 0.75;
 }
 
-struct CenterTextAnchor {};
+struct CenterText {};
 
 struct Input {
   Input() {
@@ -164,5 +171,67 @@ private:
   // Raylib's `KeyboardKey` enum has a maximum value of 348.
   std::array<bool, 348> frameKeysDown, prevFrameKeysDown;
 };
+
+struct MenuScreen {
+  struct Option {
+    Text                                     text;
+    std::function<void(ecs::ResourceBundle)> onChosen;
+  };
+
+  u32 x, y;
+
+  u32                 selectedOption = 0;
+  std::vector<Option> options;
+
+  const static inline u32 optionVerticalStride = 60;
+
+  void handleInputs(ecs::ResourceBundle r) {
+    const auto &input = r.global.getResource<Input>()->get();
+    if (input.wasKeyPressed(KEY_W)) {
+      if (selectedOption == 0) {
+        selectedOption = options.size() - 1;
+      } else {
+        selectedOption -= 1;
+      }
+    }
+
+    if (input.wasKeyPressed(KEY_S)) {
+      selectedOption = (selectedOption + 1) % options.size();
+    }
+
+    if (input.wasKeyPressed(KEY_ENTER)) {
+      options[selectedOption].onChosen(r);
+    }
+  }
+
+  void drawOptions(ecs::ResourceBundle r) {
+    auto &renderer = r.global.getResource<Renderer>()->get();
+    for (u32 i = 0, yy = y + optionVerticalStride; i < options.size(); i++, yy += optionVerticalStride) {
+      auto      &opt      = options[i];
+      const auto selected = i == selectedOption;
+
+      opt.text.x     = x;
+      opt.text.y     = yy;
+      opt.text.color = selected ? RED : WHITE;
+
+      renderer.drawText(opt.text.drawCenterAligned());
+    }
+  }
+
+  void update(ecs::ResourceBundle r) {
+    handleInputs(r);
+    drawOptions(r);
+  }
+
+  void reset() { selectedOption = 0; }
+};
+
+void renderMenuTitle(ecs::ResourceBundle r, ecs::ComponentIter<Text, TextAnimation, CenterText> iter) {
+  auto &renderer = r.global.getResource<Renderer>()->get();
+  for (auto &[t, ta, tc] : iter) {
+    ta->animate(r, t, ta->animationSpeed);
+    renderer.drawText(t->drawCenterAligned());
+  }
+}
 
 } // namespace pong

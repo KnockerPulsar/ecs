@@ -3,6 +3,7 @@
 
 #include "level.h"
 #include "levels/common.h"
+#include "levels/game_over.h"
 #include "levels/main_game.h"
 #include "levels/main_menu.h"
 
@@ -40,30 +41,22 @@ int main() {
     time += GetFrameTime();
   });
 
-  const std::string mm = "main-menu";
+  const std::string mm = pong::sceneNames::mainMenu;
   ecs.addEmptyLevel(mm);
   ecs.addSetupSystemRes(mm, pong::setupMainMenu);
   ecs.setStartLevel(mm);
 
-  const std::string mg = "main-game";
+  const std::string mg = pong::sceneNames::mainGame;
   ecs.addEmptyLevel(mg);
   ecs.addSetupSystemRes(mg, pong::setupMainGame);
 
-  ecs.addTransition(ecs::Level::Transition{
-      .sourceLevel      = mm,
-      .destinationLevel = mg,
-      .transitionCondition =
-          [&]() {
-            auto l = ecs.getLevel(mm).value().get();
-            return l.globalResources.consumeResource<pong::PlayChosen>().has_value();
-          },
-  });
+  const std::string go = pong::sceneNames::gameOver;
+  ecs.addEmptyLevel(go);
+  ecs.addSetupSystemRes(go, pong::setupGameOver);
 
-  {
-    if (!ecs.validateLevelTransitions()) {
-      std::cerr << "Invalid transitions or no start level\n";
-      std::terminate();
-    }
+  if (!ecs.validateLevelTransitions()) {
+    std::cerr << "Invalid transitions or no start level\n";
+    std::terminate();
   }
 
   ecs.runSetupSystems();
@@ -71,7 +64,7 @@ int main() {
     ecs.checkTransitions();
 
     ecs.runPreSystems();
-    ecs.runSystems();
+    ecs.runPerFrameSystems();
     ecs.runPostSystems();
   }
 

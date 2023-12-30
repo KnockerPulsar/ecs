@@ -9,69 +9,34 @@
 #include <string>
 
 namespace pong {
+
 struct PlayChosen {};
+enum class AIDifficulty { Easy, Medium, Hard };
 
-struct MenuOption {
-  Text                                     text;
-  std::function<void(ecs::ResourceBundle)> onChosen;
-};
+struct ScreenManager {
+  std::vector<MenuScreen> screens;
+  uint                    currentScreen = 0;
 
-struct MenuScreen {
-  u32 x, y;
+  // Logic to transition between screens
+  std::optional<std::function<void(ScreenManager &, ecs::ResourceBundle)>> handleTransitions;
 
-  u32                     selectedOption = 0;
-  std::vector<MenuOption> options;
+  static void update(ecs::ResourceBundle r) {
+    auto &self = r.level.getResource<ScreenManager>()->get();
 
-  const static inline u32 optionVerticalStride = 60;
+    if (self.handleTransitions)
+      (*self.handleTransitions)(self, r);
+    self.screens[self.currentScreen].update(r);
+  };
 
-  void handleInputs(ecs::ResourceBundle r) {
-    const auto &input = r.global.getResource<Input>()->get();
-    if (input.wasKeyPressed(KEY_W)) {
-      selectedOption = (selectedOption + 1) % options.size();
-    }
+  static void reset(ecs::ResourceBundle r) {
+    auto &self         = r.level.getResource<ScreenManager>()->get();
+    self.currentScreen = 0;
 
-    if (input.wasKeyPressed(KEY_S)) {
-      if (selectedOption == 0) {
-        selectedOption = options.size() - 1;
-      } else {
-        selectedOption -= 1;
-      }
-    }
-
-    if (input.wasKeyPressed(KEY_ENTER)) {
-      options[selectedOption].onChosen(r);
-    }
-  }
-
-  void drawOptions(ecs::ResourceBundle r) {
-    auto &renderer = r.global.getResource<Renderer>()->get();
-    for (u32 i = 0, yy = y + optionVerticalStride; i < options.size(); i++, yy += optionVerticalStride) {
-      auto      &opt      = options[i];
-      const auto selected = i == selectedOption;
-
-      opt.text.x     = x;
-      opt.text.y     = yy;
-      opt.text.color = selected ? RED : WHITE;
-
-      renderer.drawText(opt.text.drawCenterAligned());
-    }
-  }
-
-  static void update(ecs::ResourceBundle r, ecs::ComponentIter<MenuScreen> iter) {
-    for (auto &[m] : iter) {
-      m->handleInputs(r);
-      m->drawOptions(r);
+    for (auto &screen : self.screens) {
+      screen.reset();
     }
   }
 };
-
-void renderPongLogo(ecs::ResourceBundle r, ecs::ComponentIter<Text, TextAnimation, CenterTextAnchor> iter) {
-  auto &renderer = r.global.getResource<Renderer>()->get();
-  for (auto &[t, ta, tc] : iter) {
-    ta->animate(r, t, ta->animationSpeed);
-    renderer.drawText(t->drawCenterAligned());
-  }
-}
 
 void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
   const u32 sw = global.getResource<ScreenWidth>()->get();
@@ -85,24 +50,71 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
           .y     = static_cast<u32>(sh / 4.),
       },
       TextAnimation{.animate = sinAnimation, .animationSpeed = 2},
-      CenterTextAnchor{}
+      CenterText{}
   );
 
-  mm.addEntity(MenuScreen{
-      .x       = static_cast<u32>(sw / 2.),
-      .y       = static_cast<u32>(sh / 3.),
-      .options = {
-          MenuOption{
-              .text     = Text{.text = "Play", .color = WHITE, .baseSize = 40},
-              .onChosen = [](ecs::ResourceBundle r) { r.global.addResource(pong::PlayChosen{}); }},
-          MenuOption{
-              .text     = Text{.text = "Quit", .color = WHITE, .baseSize = 40},
-              .onChosen = [](ecs::ResourceBundle r) { r.global.addResource(ecs::Quit{}); },
+  auto mainMenu = MenuScreen{
+      .x = static_cast<u32>(sw / 2.),
+      .y = static_cast<u32>(sh / 3.),
+      .options =
+          {
+              {
+                  .text     = Text{.text = "Play", .color = WHITE, .baseSize = 40},
+                  .onChosen = [](ecs::ResourceBundle r) { r.level.addResource(pong::PlayChosen{}); },
+              },
+              {
+                  .text     = Text{.text = "Quit", .color = WHITE, .baseSize = 40},
+                  .onChosen = [](ecs::ResourceBundle r) { r.global.addResource(ecs::Quit{}); },
+              },
           },
-      }});
+  };
+
+  auto difficultyMenu = MenuScreen{
+      .x = static_cast<u32>(sw / 2.),
+      .y = static_cast<u32>(sh / 2.),
+      .options =
+          {
+              {
+                  .text = Text{.text = "Easy", .color = WHITE, .baseSize = 40},
+                  .onChosen =
+                      [](ecs::ResourceBundle r) {
+                        r.global.addResource(AIDifficulty::Easy);
+                        r.global.addResource(ecs::TransitionToScene(pong::sceneNames::mainGame));
+                      },
+              },
+              {
+                  .text = Text{.text = "Medium", .color = WHITE, .baseSize = 40},
+                  .onChosen =
+                      [](ecs::ResourceBundle r) {
+                        r.global.addResource(AIDifficulty::Medium);
+                        r.global.addResource(ecs::TransitionToScene(pong::sceneNames::mainGame));
+                      },
+              },
+              {
+                  .text = Text{.text = "Hard", .color = WHITE, .baseSize = 40},
+                  .onChosen =
+                      [](ecs::ResourceBundle r) {
+                        r.global.addResource(AIDifficulty::Hard);
+                        r.global.addResource(ecs::TransitionToScene(pong::sceneNames::mainGame));
+                      },
+              },
+          },
+  };
+
+  mm.addResource(ScreenManager{
+      .screens = {mainMenu, difficultyMenu},
+      .handleTransitions =
+          [](ScreenManager &self, ecs::ResourceBundle r) {
+            if (auto playChosen = r.level.consumeResource<PlayChosen>()) {
+              self.currentScreen = 1;
+            }
+          },
+  });
 
   // Stuff that involves rendering
-  mm.addSystem<ecs::ResourceBundle, ecs::Query<Text, TextAnimation, CenterTextAnchor>>(renderPongLogo);
-  mm.addSystem<ecs::ResourceBundle, ecs::Query<MenuScreen>>(MenuScreen::update);
+  mm.addPerFrameSystem<ecs::ResourceBundle, ecs::Query<Text, TextAnimation, CenterText>>(renderMenuTitle);
+  mm.addPerFrameSystem<ecs::ResourceBundle>(ScreenManager::update);
+
+  mm.addResetSystem<ecs::ResourceBundle>(ScreenManager::reset);
 }
 } // namespace pong

@@ -45,17 +45,23 @@ struct MultiIterator {
         return std::tuple_cat(t, unwrapIterators<N + 1>(iterTuple));
       }
     }
+
     void updateRefHolder(uint offset) {
       refHolder = unwrapIterators(unwrapTuple(cc->getEntityComponents<Ts...>(offset)));
     }
 
     iterator &operator++() {
-      bool shouldContinue = true;
-      do {
-        offset++;
+      offset++;
+
+      while (offset < maxOffset) {
         auto compTuple = cc->getEntityComponents<Ts...>(offset);
-        shouldContinue = !allSome(unwrapTuple(compTuple)) && offset != maxOffset;
-      } while (shouldContinue);
+
+        if (ecs::allSome(compTuple) && iterator::allSome(unwrapTuple(compTuple))) {
+          break;
+        }
+
+        offset++;
+      }
 
       return *this;
     }
@@ -64,6 +70,7 @@ struct MultiIterator {
       updateRefHolder(offset);
       return refHolder;
     }
+
     pointer operator->() {
       updateRefHolder(offset);
       return &refHolder;
@@ -91,8 +98,13 @@ struct MultiIterator {
   // Need to find the first iterator to have all components so dereferencing works properly.
   // If none exist, we'll return what's equivalent to `begin()`
   static uint findValidStart(ComponentContainer &cc) {
-    for (auto current = 0; current != cc.numEntities; current++) {
-      if (iterator::allSome(unwrapTuple(cc.getEntityComponents<Ts...>(current))))
+    for (auto current = 0u; current != cc.numEntities; current++) {
+      auto iters = cc.getEntityComponents<Ts...>(current);
+      if (!allSome(iters)) {
+        continue;
+      }
+
+      if (iterator::allSome(unwrapTuple(iters)))
         return current;
     }
 
@@ -104,14 +116,24 @@ struct MultiIterator {
   // TODO: could probably be faster to start at the end and return on the first `allSome`, needs `iterator::retreat_all`
   static uint findValidEnd(ComponentContainer &cc) {
     // Should be called `firstAnyNoneAfterLastAllSome` but that's just too long
-    auto lastAllSome = 0;
-    auto current     = 0;
-    for (; current != cc.numEntities; current++) {
-      if (iterator::allSome(unwrapTuple(cc.getEntityComponents<Ts...>(current))))
-        lastAllSome = current;
+    auto current = static_cast<int>(cc.numEntities - 1);
+    for (; current >= 0; current--) {
+      auto iters = cc.getEntityComponents<Ts...>(current);
+
+      // One of the Ts doesn't have a component vector (no entity has that component)
+      if (!allSome(iters)) {
+        continue;
+      }
+
+      // The current entity doesn't have all the requested components
+      if (!iterator::allSome(unwrapTuple(iters))) {
+        continue;
+      }
+
+      return current + 1;
     }
 
-    return ++lastAllSome;
+    return 1;
   }
 
   iterator _begin, _end;

@@ -2,21 +2,24 @@
 #include "defs.h"
 #include "ecs.h"
 #include "level.h"
+#include "levels/main_menu.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "resources.h"
 
-#include <cmath>
 #include <ios>
 #include <unordered_set>
 
 namespace pong {
-enum class Player : u8 { One, AI };
+const auto ballSpeed           = 800;
+const auto paddleWidth         = 20;
+const auto paddleHeight        = 100;
+const auto paddleOffset        = paddleWidth;
+const auto playerMovementSpeed = 1200.0f;
+const auto maxGoals            = 10;
+const auto scoreY              = 20;
 
-const auto ballSpeed    = 800;
-const auto paddleWidth  = 20;
-const auto paddleHeight = 100;
-const auto paddleOffset = paddleWidth;
+enum class Player : u8 { Human, AI };
 
 struct Round : Wrapper<uint> {};
 struct TimeScale : Wrapper<float> {};
@@ -31,8 +34,6 @@ struct PlayerScored {
     }
   };
 };
-
-struct BallEvents : Wrapper<std::unordered_set<PlayerScored, PlayerScored::Hasher>> {};
 
 struct Pos2D : Vector2 {};
 struct Velocity : Vector2 {};
@@ -52,18 +53,21 @@ struct PlayerScore {
   PlayerScore() = default;
 
   PlayerScore(Color c, u32 x, u32 y) : text({"", c}) {
-    text.x    = x;
-    text.y    = y;
-    text.text = std::to_string(0);
+    text.x = x;
+    text.y = y;
+    updateText();
   }
+
+  void updateText() { text.text = std::to_string(score); }
 
   void incrementScore() {
     score += 1;
-    text.text = std::to_string(score);
+    updateText();
   }
 };
 
 f32 sign(float x) { return x > 0 ? 1 : -1; }
+f32 frac(float x) { return x - static_cast<int>(x); }
 
 void render(
     ecs::ResourceBundle                      r,
@@ -86,25 +90,57 @@ void render(
   }
 };
 
+void moveAI(ecs::ResourceBundle r, Pos2D &pos, Pos2D &ballPosition, Velocity &vel) {
+  const auto time   = r.global.getResource<Time>()->get();
+  const auto aiDiff = r.global.getResource<AIDifficulty>()->get();
+
+  auto slowness = 0.2;
+  auto speed    = 0.75;
+
+  switch (aiDiff) {
+  case AIDifficulty::Easy: {
+    slowness = 0.6;
+    speed    = 0.5;
+    break;
+  }
+  case AIDifficulty::Medium: {
+    slowness = 0.3;
+    speed    = 0.75;
+    break;
+  }
+  case AIDifficulty::Hard: {
+    slowness = 0.1;
+    speed    = 1;
+    break;
+  }
+  }
+
+  if (frac(time) < slowness)
+    return;
+
+  const auto playerCenter = pos.y + paddleHeight;
+  const auto signDy       = -sign(playerCenter - ballPosition.y);
+
+  vel.y = playerMovementSpeed * signDy * speed;
+}
+
 void handleInputs(
     ecs::ResourceBundle r, ecs::ComponentIter<Player, Pos2D, Velocity> iter, ecs::ComponentIter<Circle, Pos2D> ball
 ) {
-  const auto playerMovementSpeed = 1200.0f;
 
   const auto &inputs = r.global.getResource<Input>()->get();
   const auto  sh     = r.global.getResource<ScreenWidth>()->get();
-  const auto  time   = r.global.getResource<Time>()->get();
 
   auto &ts = r.level.getResource<TimeScale>()->get();
 
-  auto &[_, ballPosition] = *ball.begin();
+  auto [_, ballPosition] = *ball.begin();
 
   for (auto &[pl, pos, vel] : iter) {
     vel->x *= (0.975);
     vel->y *= (0.975);
 
     switch (*pl) {
-    case Player::One: {
+    case Player::Human: {
 
       if (inputs.isKeyDown(KEY_W) && pos->y > 0) {
         vel->y = -playerMovementSpeed;
@@ -117,12 +153,7 @@ void handleInputs(
       break;
     }
     case Player::AI: {
-      if (fmod(time, 1.0f) < 0.2)
-        break;
-
-      const auto playerCenter = pos->y + paddleHeight;
-      const auto signDy       = -sign(playerCenter - ballPosition->y);
-      vel->y                  = playerMovementSpeed * signDy;
+      moveAI(r, *pos, *ballPosition, *vel);
       break;
     }
     }
@@ -150,8 +181,7 @@ void checkGoal(ecs::ResourceBundle r, ecs::ComponentIter<Circle, Pos2D, Velocity
   const auto sw = r.global.getResource<ScreenWidth>()->get();
   const auto sh = r.global.getResource<ScreenHeight>()->get();
 
-  auto &ballEvents = r.level.getResource<BallEvents>()->get();
-  auto &round      = r.level.getResource<Round>()->get();
+  auto &round = r.level.getResource<Round>()->get();
 
   for (auto &[c, p, v] : iter) {
     std::optional<Player> scoring = std::nullopt;
@@ -162,11 +192,11 @@ void checkGoal(ecs::ResourceBundle r, ecs::ComponentIter<Circle, Pos2D, Velocity
     if (rightGoal) {
       scoring = Player::AI;
     } else if (leftGoal) {
-      scoring = Player::One;
+      scoring = Player::Human;
     }
 
     if (scoring) {
-      ballEvents.value.insert(PlayerScored{*scoring});
+      r.level.addResource(PlayerScored{*scoring});
       p->x = sw / 2;
       p->y = sh / 2;
       round += 1;
@@ -182,17 +212,32 @@ void checkGoal(ecs::ResourceBundle r, ecs::ComponentIter<Circle, Pos2D, Velocity
 }
 
 void onGoal(ecs::ResourceBundle r, ecs::ComponentIter<Pos2D, Player, PlayerScore> iter) {
-  auto &ballEvents = r.level.getResource<BallEvents>()->get();
+  auto be = r.level.consumeResource<PlayerScored>();
 
-  for (const auto &be : ballEvents.value) {
-    for (auto &[pp, p, ps] : iter) {
-      if (be.scoringPlayer == *p) {
-        ps->incrementScore();
-      }
-    }
+  // No player scored yet
+  if (!be) {
+    return;
   }
 
-  ballEvents.value.clear();
+  for (auto &[pp, p, ps] : iter) {
+    if (be->scoringPlayer == *p) {
+      ps->incrementScore();
+    }
+
+    if (ps->score == maxGoals) {
+
+      switch (*p) {
+      case Player::Human:
+        r.global.addResource(GameResult::Won);
+        break;
+      case Player::AI:
+        r.global.addResource(GameResult::Lost);
+        break;
+      }
+
+      r.global.addResource(ecs::TransitionToScene(pong::sceneNames::gameOver));
+    }
+  }
 }
 
 void onBallHit(Pos2D &ballPosition, Velocity &ballVelocity, Pos2D &playerPosition, Rect &rect) {
@@ -291,58 +336,96 @@ void checkCollisions(
   }
 }
 
+void resetGame(
+    ecs::ResourceBundle                                      r,
+    ecs::ComponentIter<Player, Pos2D, PlayerScore, Velocity> players,
+    ecs::ComponentIter<Circle, Pos2D, Velocity>              ball
+) {
+  const f32 sw = r.global.getResource<ScreenWidth>()->get();
+  const f32 sh = r.global.getResource<ScreenHeight>()->get();
+
+  for (auto &[player, playerPos, playerScore, playerVel] : players) {
+    playerPos->y = (sh - paddleHeight) / 2.f;
+    *playerVel   = {0, 0};
+
+    playerScore->score = 0;
+    playerScore->updateText();
+  }
+
+  auto [_, ballPos, ballVel] = *ball.begin();
+
+  *ballPos = {sw / 2.0f, sh / 2.0f};
+  *ballVel = Velocity{ballSpeed, 0};
+}
+
 void setupMainGame(ecs::Resources global, ecs::Level &mg) {
 
-  const f32  sw     = global.getResource<ScreenWidth>()->get();
-  const f32  sh     = global.getResource<ScreenHeight>()->get();
-  const auto scoreY = 20;
+  const f32 sw = global.getResource<ScreenWidth>()->get();
+  const f32 sh = global.getResource<ScreenHeight>()->get();
 
-  mg.addResource(TimeScale{1.0f});
+  // Entity initialization
+  {
+    mg.addEntity(
+        Player::Human,
+        Pos2D{
+            sw - 2.f * paddleOffset,
+            (sh - paddleHeight) / 2.f,
+        },
+        Rect{paddleWidth, paddleHeight},
+        BLUE,
+        Velocity{},
+        PlayerScore{BLUE, static_cast<u32>(sw * 2. / 3.), scoreY}
+    );
 
-  mg.addEntity(
-      Player::One,
-      Pos2D{
-          sw - 2.f * paddleOffset,
-          (sh - paddleHeight) / 2.f + 10,
-      },
-      Rect{paddleWidth, paddleHeight},
-      BLUE,
-      Velocity{},
-      PlayerScore{BLUE, static_cast<u32>(sw * 2. / 3.), scoreY}
-  );
+    mg.addEntity(
+        Player::AI,
+        Pos2D{
+            paddleOffset,
+            (sh - paddleHeight) / 2.f,
+        },
+        Rect{paddleWidth, paddleHeight},
+        RED,
+        Velocity{},
+        PlayerScore{RED, static_cast<u32>(sw * 1. / 3.), scoreY}
+    );
 
-  mg.addEntity(
-      Player::AI,
-      Pos2D{
-          paddleOffset,
-          (sh - paddleHeight) / 2.f,
-      },
-      Rect{paddleWidth, paddleHeight},
-      RED,
-      Velocity{},
-      PlayerScore{RED, static_cast<u32>(sw * 1. / 3.), scoreY}
-  );
+    mg.addEntity(Pos2D{sw / 2.f, sh / 2.f}, Circle{10}, Velocity{ballSpeed, 0}, WHITE);
+  }
 
-  mg.addEntity(Pos2D{sw / 2.f, sh / 2.f}, Circle{10}, Velocity{ballSpeed, 0}, WHITE);
+  // Level resource initialization
+  {
+    mg.addResource(Round{0});
+    mg.addResource(TimeScale{1.0f});
+  }
 
-  mg.addResource(BallEvents{});
-  mg.addResource(Round{0});
+  // Per frame systems
+  {
+    mg.addPerFrameSystem<ecs::ResourceBundle, ecs::Query<Player, Pos2D, Velocity>, ecs::Query<Circle, Pos2D>>(
+        handleInputs
+    );
 
-  mg.addSystem<ecs::ResourceBundle, ecs::Query<Player, Pos2D, Velocity>, ecs::Query<Circle, Pos2D>>(handleInputs);
+    mg.addPerFrameSystem<ecs::ResourceBundle, ecs::Query<Pos2D, Velocity>>(moveObjects);
+    mg.addPerFrameSystem<ecs::ResourceBundle, ecs::Query<Circle, Pos2D, Velocity>, ecs::Query<Rect, Pos2D, Player>>(
+        checkCollisions
+    );
 
-  mg.addSystem<ecs::ResourceBundle, ecs::Query<Pos2D, Velocity>>(moveObjects);
-  mg.addSystem<ecs::ResourceBundle, ecs::Query<Circle, Pos2D, Velocity>, ecs::Query<Rect, Pos2D, Player>>(
-      checkCollisions
-  );
+    // Stuff that involves rendering
+    mg.addPerFrameSystem<
+        ecs::ResourceBundle,
+        ecs::Query<Pos2D, Rect, Color>,
+        ecs::Query<Pos2D, Circle, Color>,
+        ecs::Query<PlayerScore>>(render);
 
-  // Stuff that involves rendering
-  mg.addSystem<
-      ecs::ResourceBundle,
-      ecs::Query<Pos2D, Rect, Color>,
-      ecs::Query<Pos2D, Circle, Color>,
-      ecs::Query<PlayerScore>>(render);
+    mg.addPerFrameSystem<ecs::ResourceBundle, ecs::Query<Circle, Pos2D, Velocity>>(checkGoal);
+    mg.addPerFrameSystem<ecs::ResourceBundle, ecs::Query<Pos2D, Player, PlayerScore>>(onGoal);
+  }
 
-  mg.addSystem<ecs::ResourceBundle, ecs::Query<Circle, Pos2D, Velocity>>(checkGoal);
-  mg.addSystem<ecs::ResourceBundle, ecs::Query<Pos2D, Player, PlayerScore>>(onGoal);
+  // Reset system
+  {
+    mg.addResetSystem<
+        ecs::ResourceBundle,
+        ecs::Query<Player, Pos2D, PlayerScore, Velocity>,
+        ecs::Query<Circle, Pos2D, Velocity>>(resetGame);
+  }
 }
 }; // namespace pong

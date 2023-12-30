@@ -13,6 +13,10 @@ using LevelMap = std::unordered_map<std::string, Level>;
 // Should be used to indicate that the main loop should exit
 struct Quit {};
 
+struct TransitionToScene {
+  std::string levelName;
+};
+
 class ECS {
   LevelMap                       levels;
   std::vector<Level::Transition> levelTransitions;
@@ -63,7 +67,25 @@ public:
     return true;
   }
 
+  void transitionToLevel(std::string levelName) {
+    std::cout << "Transitioning to level " << levelName << " from level " << _currentLevel << '\n';
+    runResetSystems();
+    _currentLevel = levelName;
+    runSetupSystems();
+  }
+
   void checkTransitions() {
+    if (auto transition = globalResources.consumeResource<TransitionToScene>()) {
+      if (!levels.contains(transition->levelName)) {
+        std::cerr << "Attempting to transition to non-existent scene: " << transition->levelName << '\n';
+        std::cerr << "Make sure the name is correct and that it has been added to the ECS instance\n";
+        std::terminate();
+      }
+
+      transitionToLevel(transition->levelName);
+      return;
+    }
+
     for (const auto &transition : levelTransitions) {
       if (transition.sourceLevel != _currentLevel)
         continue;
@@ -71,19 +93,16 @@ public:
       const bool shouldTransition = transition.transitionCondition();
       if (shouldTransition) {
         // TODO: cleanup source and init destination?
-        _currentLevel = transition.destinationLevel;
-        runSetupSystems();
+        transitionToLevel(transition.destinationLevel);
       }
     }
   }
 
   inline Level &currentLevel() { return levels.find(_currentLevel)->second; }
 
-  void runSystems() { return currentLevel().runSystems(); }
-  void runSetupSystems() {
-    return currentLevel().runSetupSystems();
-    currentLevel().hasBeenSetup = true;
-  }
+  void runResetSystems() { currentLevel().runResetSystems(); }
+  void runPerFrameSystems() { currentLevel().runSystems(); }
+  void runSetupSystems() { currentLevel().runSetupSystems(); }
 
   std::optional<std::reference_wrapper<Level>> getLevel(const std::string &levelName) {
     if (!levels.contains(levelName)) {

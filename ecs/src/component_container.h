@@ -45,16 +45,16 @@ struct ComponentContainer {
     (lazilyInitComponentVector<Ts>(), ...);
     (lazilyRegisterComponentOperations<Ts>(), ...);
 
-    for (auto &[type_id, any] : component_vectors) {
-      componentOperations[type_id].pushDummy();
+    for (auto &[type_id, op] : componentOperations) {
+      op.pushDummy();
     }
 
     (addComponent(std::forward<Ts>(comps)), ...);
 
-    numEntities += 1;
-    return numEntities;
+    return numEntities++;
   }
 
+  // Optional over the OptIters since the component vector might not exist.
   template <typename T2, typename... Ts2>
   using EntityQueryResult = std::tuple<std::optional<OptIter<T2>>, std::optional<OptIter<Ts2>>...>;
 
@@ -103,8 +103,8 @@ struct ComponentContainer {
 private:
   template <typename T>
   void addComponent(T comp) {
-    auto compVec                       = getComponentVector<T>();
-    compVec.value().get()[numEntities] = comp;
+    auto compVec                = getComponentVector<T>();
+    compVec->get()[numEntities] = comp;
   }
 
   template <typename T>
@@ -117,7 +117,7 @@ private:
   template <typename T>
   void lazilyRegisterComponentOperations() {
     if (auto f = componentOperations.find(typeid(T)); f == componentOperations.end()) {
-      auto dummyPusher = [this]() { getComponentVector<T>().value().get().push_back(std::nullopt); };
+      auto dummyPusher = [this]() { getComponentVector<T>()->get().push_back(std::nullopt); };
 
       auto moveComponent = [this](ComponentContainer &oth, Entity sourceId, Entity destId) {
         auto selfVec  = getComponentVector<T>();
