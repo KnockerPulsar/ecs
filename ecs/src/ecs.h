@@ -18,9 +18,8 @@ struct TransitionToScene {
 };
 
 class ECS {
-  LevelMap                       levels;
-  std::vector<Level::Transition> levelTransitions;
-  std::string                    startLevel, _currentLevel;
+  LevelMap    levels;
+  std::string startLevel, _currentLevel;
 
   Resources                          globalResources;           // Resources shared between all levels.
   std::vector<std::function<void()>> globalResourceSystemsPre;  // Pre-frame systems
@@ -54,20 +53,6 @@ public:
     levels.find(levelName)->second.addSetupSystem(fn);
   }
 
-  void addTransition(Level::Transition &&lt) { levelTransitions.push_back(std::move(lt)); }
-
-  bool validateLevelTransitions() const {
-    if (startLevel.empty()) {
-      return false;
-    }
-
-    return std::all_of(levelTransitions.begin(), levelTransitions.end(), [this](auto &transition) {
-      const bool sourceValid      = levels.contains(transition.sourceLevel);
-      const bool destinationValid = levels.contains(transition.destinationLevel);
-      return sourceValid && destinationValid;
-    });
-  }
-
   void transitionToLevel(std::string levelName) {
     std::cout << "Transitioning to level " << levelName << " from level " << _currentLevel << '\n';
     runResetSystems();
@@ -86,23 +71,21 @@ public:
       transitionToLevel(transition->levelName);
       return;
     }
-
-    for (const auto &transition : levelTransitions) {
-      if (transition.sourceLevel != _currentLevel)
-        continue;
-
-      const bool shouldTransition = transition.transitionCondition();
-      if (shouldTransition) {
-        transitionToLevel(transition.destinationLevel);
-      }
-    }
   }
 
   inline Level &currentLevel() { return levels.find(_currentLevel)->second; }
 
   void runResetSystems() { currentLevel().runResetSystems(); }
   void runPerFrameSystems() { currentLevel().runSystems(); }
-  void runSetupSystems() { currentLevel().runSetupSystems(); }
+
+  void runSetupSystems() {
+    if (_currentLevel.empty()) {
+      std::cerr << "No startup level was given\n";
+      std::terminate();
+    }
+
+    currentLevel().runSetupSystems();
+  }
 
   std::optional<std::reference_wrapper<Level>> getLevel(const std::string &levelName) {
     if (!levels.contains(levelName)) {

@@ -52,11 +52,6 @@ int main() {
   auto mg = ecs.addLevel(pong::sceneNames::mainGame, pong::setupMainGame);
   auto go = ecs.addLevel(pong::sceneNames::gameOver, pong::setupGameOver);
 
-  if (!ecs.validateLevelTransitions()) {
-    std::cerr << "Invalid transitions or no start level\n";
-    std::terminate();
-  }
-
   ecs.runSetupSystems();
   while (!ecs.shouldQuit()) {
     ecs.checkTransitions();

@@ -35,11 +35,6 @@ struct OptTupleUnwrapper;
 struct Level {
   friend class ECS;
 
-  struct Transition {
-    std::string           sourceLevel, destinationLevel;
-    std::function<bool()> transitionCondition;
-  };
-
   ComponentContainer components;
 
   std::vector<std::function<void()>> perFrameSystems;
