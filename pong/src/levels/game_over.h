@@ -28,7 +28,7 @@ void setupGameOver(ecs::Resources &global, ecs::Level &go) {
       .options =
           {
               {
-                  .text = Text{.text = "Replay", .color = WHITE, .baseSize = 40},
+                  .text = Text{.text = "Replay"},
                   .onChosen =
                       [](ecs::ResourceBundle r) {
                         // Should already have the difficulty set, only need to reload the scene
@@ -36,7 +36,7 @@ void setupGameOver(ecs::Resources &global, ecs::Level &go) {
                       },
               },
               {
-                  .text = Text{.text = "Main Menu", .color = WHITE, .baseSize = 40},
+                  .text = Text{.text = "Main Menu"},
                   .onChosen =
                       [](ecs::ResourceBundle r) {
                         // Should allow the user to either quit or replay with another difficulty

@@ -44,10 +44,11 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
 
   mm.addEntity(
       Text{
-          .text  = "PONG",
-          .color = MAGENTA,
-          .x     = static_cast<u32>(sw / 2.),
-          .y     = static_cast<u32>(sh / 4.),
+          .text     = "PONG",
+          .color    = MAGENTA,
+          .x        = static_cast<u32>(sw / 2.),
+          .y        = static_cast<u32>(sh / 4.),
+          .baseSize = 80,
       },
       TextAnimation{.animate = sinAnimation, .animationSpeed = 2},
       CenterText{}
@@ -59,11 +60,11 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
       .options =
           {
               {
-                  .text     = Text{.text = "Play", .color = WHITE, .baseSize = 40},
+                  .text     = Text{.text = "Play"},
                   .onChosen = [](ecs::ResourceBundle r) { r.level.addResource(pong::PlayChosen{}); },
               },
               {
-                  .text     = Text{.text = "Quit", .color = WHITE, .baseSize = 40},
+                  .text     = Text{.text = "Quit"},
                   .onChosen = [](ecs::ResourceBundle r) { r.global.addResource(ecs::Quit{}); },
               },
           },
@@ -75,7 +76,7 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
       .options =
           {
               {
-                  .text = Text{.text = "Easy", .color = WHITE, .baseSize = 40},
+                  .text = Text{.text = "Easy"},
                   .onChosen =
                       [](ecs::ResourceBundle r) {
                         r.global.addResource(AIDifficulty::Easy);
@@ -83,7 +84,7 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
                       },
               },
               {
-                  .text = Text{.text = "Medium", .color = WHITE, .baseSize = 40},
+                  .text = Text{.text = "Medium"},
                   .onChosen =
                       [](ecs::ResourceBundle r) {
                         r.global.addResource(AIDifficulty::Medium);
@@ -91,7 +92,7 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
                       },
               },
               {
-                  .text = Text{.text = "Hard", .color = WHITE, .baseSize = 40},
+                  .text = Text{.text = "Hard"},
                   .onChosen =
                       [](ecs::ResourceBundle r) {
                         r.global.addResource(AIDifficulty::Hard);

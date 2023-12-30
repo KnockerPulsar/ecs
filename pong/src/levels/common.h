@@ -10,6 +10,9 @@
 
 namespace pong {
 
+const auto selectedOptionColor = MAGENTA;
+const auto defaultTextColor    = DARKGRAY;
+
 namespace sceneNames {
   const std::string mainMenu = "main-menu";
   const std::string mainGame = "main-game";
@@ -101,12 +104,12 @@ private:
 
 struct Text {
   std::string text;
-  Color       color;
 
+  Color color     = defaultTextColor;
   float fontScale = 1.0;
   u32   x         = 0;
   u32   y         = 0;
-  u32   baseSize  = 80;
+  u32   baseSize  = 40;
 
   static u32 alignTextToCenter(const Text &tt) {
     const auto offset = MeasureText(tt.text.c_str(), tt.fontScale * tt.baseSize) / 2;
@@ -214,7 +217,7 @@ struct MenuScreen {
 
       opt.text.x     = x;
       opt.text.y     = yy;
-      opt.text.color = selected ? RED : WHITE;
+      opt.text.color = selected ? selectedOptionColor : defaultTextColor;
 
       renderer.drawText(opt.text.drawCenterAligned());
     }

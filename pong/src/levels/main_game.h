@@ -63,13 +63,12 @@ struct PlayerScore {
   Text text;
   u32  score = 0;
 
-  PlayerScore() = default;
-
-  PlayerScore(Color c, u32 x, u32 y) : text({"", c}) {
-    text.x = x;
-    text.y = y;
+  PlayerScore(Text &&t) : text(std::move(t)) {
+    text.baseSize = 80;
     updateText();
   }
+
+  PlayerScore() { updateText(); }
 
   void updateText() { text.text = std::to_string(score); }
 
@@ -403,7 +402,11 @@ void setupMainGame(ecs::Resources global, ecs::Level &mg) {
         Rect{paddleWidth, paddleHeight},
         BLUE,
         Velocity{},
-        PlayerScore{BLUE, static_cast<u32>(sw * 2. / 3.), scoreY}
+        PlayerScore{Text{
+            .color = BLUE,
+            .x     = static_cast<u32>(sw * 2. / 3.),
+            .y     = scoreY,
+        }}
     );
 
     mg.addEntity(
@@ -415,7 +418,11 @@ void setupMainGame(ecs::Resources global, ecs::Level &mg) {
         Rect{paddleWidth, paddleHeight},
         RED,
         Velocity{},
-        PlayerScore{RED, static_cast<u32>(sw * 1. / 3.), scoreY}
+        PlayerScore{Text{
+            .color = RED,
+            .x     = static_cast<u32>(sw * 1. / 3.),
+            .y     = scoreY,
+        }}
     );
 
     mg.addEntity(Pos2D{sw / 2.f, sh / 2.f}, Circle{10}, Velocity{ballSpeed, 0}, WHITE);
@@ -434,7 +441,7 @@ void setupMainGame(ecs::Resources global, ecs::Level &mg) {
         .options =
             {
                 {
-                    .text = Text{.text = "Unpause", .color = WHITE, .baseSize = 40},
+                    .text = Text{.text = "Unpause"},
                     .onChosen =
                         [](ecs::ResourceBundle r) {
                           auto &paused = r.level.getResource<Paused>()->get();
@@ -442,7 +449,7 @@ void setupMainGame(ecs::Resources global, ecs::Level &mg) {
                         },
                 },
                 {
-                    .text = Text{.text = "Main Menu", .color = WHITE, .baseSize = 40},
+                    .text = Text{.text = "Main Menu"},
                     .onChosen =
                         [](ecs::ResourceBundle r) {
                           auto &paused = r.level.getResource<Paused>()->get();
