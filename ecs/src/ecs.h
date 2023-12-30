@@ -27,6 +27,23 @@ class ECS {
   std::vector<std::function<void()>> globalResourceSystemsPost; // Post-frame systems
 
 public:
+  template <typename... F>
+  [[nodiscard]] Level &addStartupLevel(const std::string &levelName, F &&...setupFunctions) {
+    startLevel = _currentLevel = levelName;
+
+    return addLevel(levelName, setupFunctions...);
+  }
+
+  template <typename... F>
+  [[nodiscard]] Level &addLevel(const std::string &levelName, F &&...setupFunctions) {
+    auto [iter, inserted] = levels.insert({levelName, Level{.globalResources = globalResources}});
+    assert(inserted);
+
+    (iter->second.addSetupSystem(setupFunctions), ...);
+
+    return iter->second;
+  }
+
   void addEmptyLevel(const std::string &levelName) {
     levels.insert({levelName, Level{.globalResources = globalResources}});
   }
@@ -35,13 +52,6 @@ public:
   template <typename F>
   void addSetupSystem(const std::string &levelName, F &&fn) {
     levels.find(levelName)->second.addSetupSystem(fn);
-  }
-
-  // A setup system that uses global resources
-  // For example, that reads screen width and height.
-  template <typename F>
-  void addSetupSystemRes(const std::string &levelName, F &&fn) {
-    levels.find(levelName)->second.addSetupSystem([this, &fn](ecs::Level &l) { fn(this->globalResources, l); });
   }
 
   void addTransition(Level::Transition &&lt) { levelTransitions.push_back(std::move(lt)); }
@@ -56,15 +66,6 @@ public:
       const bool destinationValid = levels.contains(transition.destinationLevel);
       return sourceValid && destinationValid;
     });
-  }
-
-  bool setStartLevel(const std::string &startingLevelName) {
-    if (!levels.contains(startingLevelName)) {
-      return false;
-    }
-
-    startLevel = _currentLevel = startingLevelName;
-    return true;
   }
 
   void transitionToLevel(std::string levelName) {

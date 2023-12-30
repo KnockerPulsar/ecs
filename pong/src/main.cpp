@@ -21,38 +21,36 @@ int main() {
 
   ecs::ECS ecs;
 
-  ecs.addGlobalResource(pong::Time{0.0});
-  ecs.addGlobalResource(pong::DeltaTime{1. / 60.});
-  ecs.addGlobalResource(pong::ScreenWidth(GetScreenWidth()));
-  ecs.addGlobalResource(pong::ScreenHeight(GetScreenHeight()));
+  // Resources that are shared for all levels
+  {
+    ecs.addGlobalResource(pong::Time{0.0});
+    ecs.addGlobalResource(pong::DeltaTime{1. / 60.});
+    ecs.addGlobalResource(pong::ScreenWidth(GetScreenWidth()));
+    ecs.addGlobalResource(pong::ScreenHeight(GetScreenHeight()));
 
-  ecs.addGlobalResource(pong::Input{});
-  ecs.addGlobalResource(pong::Renderer{});
+    ecs.addGlobalResource(pong::Input{});
+    ecs.addGlobalResource(pong::Renderer{});
+  }
 
-  ecs.addGlobalResourceSystemPre(pong::Input::pollNewInputs);
+  // Systems that run on global resources before and after each frame
+  {
+    ecs.addGlobalResourceSystemPre(pong::Input::pollNewInputs);
 
-  ecs.addGlobalResourceSystemPost(pong::Renderer::system);
-  ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
-  ecs.addGlobalResourceSystemPost([](ecs::Resources &r) {
-    auto &dt   = r.getResource<pong::DeltaTime>()->get();
-    auto &time = r.getResource<pong::Time>()->get();
+    ecs.addGlobalResourceSystemPost(pong::Renderer::system);
+    ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
+    ecs.addGlobalResourceSystemPost([](ecs::Resources &r) {
+      auto &dt   = r.getResource<pong::DeltaTime>()->get();
+      auto &time = r.getResource<pong::Time>()->get();
 
-    dt = pong::DeltaTime(std::min(GetFrameTime(), 1 / 60.0f));
-    time += GetFrameTime();
-  });
+      dt = pong::DeltaTime(std::min(GetFrameTime(), 1 / 60.0f));
+      time += GetFrameTime();
+    });
+  }
 
-  const std::string mm = pong::sceneNames::mainMenu;
-  ecs.addEmptyLevel(mm);
-  ecs.addSetupSystemRes(mm, pong::setupMainMenu);
-  ecs.setStartLevel(mm);
-
-  const std::string mg = pong::sceneNames::mainGame;
-  ecs.addEmptyLevel(mg);
-  ecs.addSetupSystemRes(mg, pong::setupMainGame);
-
-  const std::string go = pong::sceneNames::gameOver;
-  ecs.addEmptyLevel(go);
-  ecs.addSetupSystemRes(go, pong::setupGameOver);
+  // Levels and their setup code
+  auto mm = ecs.addStartupLevel(pong::sceneNames::mainMenu, pong::setupMainMenu);
+  auto mg = ecs.addLevel(pong::sceneNames::mainGame, pong::setupMainGame);
+  auto go = ecs.addLevel(pong::sceneNames::gameOver, pong::setupGameOver);
 
   if (!ecs.validateLevelTransitions()) {
     std::cerr << "Invalid transitions or no start level\n";

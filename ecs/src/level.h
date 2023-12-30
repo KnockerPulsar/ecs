@@ -45,7 +45,7 @@ struct Level {
   std::vector<std::function<void()>> perFrameSystems;
   std::vector<std::function<void()>> resetSystems;
 
-  std::vector<std::function<void(Level &)>> setupSystems;
+  std::vector<std::function<void(Resources &, Level &)>> setupSystems;
 
   Resources  levelResources;
   Resources &globalResources; // Obtained from the ECS instance containing this level.
@@ -104,6 +104,11 @@ struct Level {
   template <typename R>
   void addResource(R initialValue) {
     levelResources.addResource(initialValue);
+  }
+
+  template <typename F>
+  void addSetupSystem(F &&fn) {
+    setupSystems.push_back(fn);
   }
 
 private:
@@ -191,7 +196,7 @@ private:
     }
 
     for (auto &setupSys : setupSystems) {
-      setupSys(*this);
+      setupSys(globalResources, *this);
     }
 
     hasBeenSetup = true;
@@ -211,11 +216,6 @@ private:
     for (auto &cleanupSys : resetSystems) {
       cleanupSys();
     }
-  }
-
-  template <typename F>
-  void addSetupSystem(F &&fn) {
-    setupSystems.push_back(fn);
   }
 };
 } // namespace ecs
