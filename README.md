@@ -5,14 +5,6 @@ An ECS library implementation written with C++20.
   <img src="images/main_menu.png" alt="Main menu preview">
 </div>
 
-<div style="text-align:center">
-  <img src="images/main_game.png" alt="Main game preview">
-</div>
-
-<div style="text-align:center">
-  <img src="images/win_screen.png" alt="Win screen preview">
-</div>
-
 This library is an implementation of the ECS architecture pattern, _with a twist_. It has five main pillars.
 1. Entities: Collections of components
 2. Components: Carry data 
@@ -30,4 +22,14 @@ cmake --build ./build
 ```
 
 Then you should find the binary of the example under `./build`
+
+# More images of pong
+
+<div style="text-align:center">
+  <img src="images/main_game.png" alt="Main game preview">
+</div>
+
+<div style="text-align:center">
+  <img src="images/win_screen.png" alt="Win screen preview">
+</div>
 
