@@ -11,11 +11,10 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -Wall")
 
 CMAKE_POLICY(SET CMP0074 NEW)
 
-set(ECS_DIR ../ecs/src)
+set(ECS_DIR ../../ecs/src)
 set(RAYLIB_DIR ./deps/raylib)
 
-set(SOURCES 
-)
+set(SOURCES )
 
 # Define the directories in which to search for the included headers
 include_directories(
