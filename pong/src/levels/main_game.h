@@ -23,7 +23,6 @@ enum class Player : u8 { Human, AI };
 
 struct Paused : Wrapper<bool> {};
 struct Round : Wrapper<uint> {};
-struct TimeScale : Wrapper<float> {};
 
 struct PlayerScored {
   Player scoringPlayer;
@@ -137,12 +136,12 @@ void moveAI(ecs::ResourceBundle r, Pos2D &pos, Pos2D &ballPosition, Velocity &ve
     return;
 
   const auto playerCenter = pos.y + paddleHeight / 2;
-  const auto dy = (playerCenter - ballPosition.y) / paddleHeight;
+  const auto dy           = (playerCenter - ballPosition.y) / paddleHeight;
 
-  if(std::fabs(dy) < 0.45) 
+  if (std::fabs(dy) < 0.45)
     return;
 
-  const auto signDy       = sign(dy);
+  const auto signDy = sign(dy);
 
   vel.y = -playerMovementSpeed * signDy * speed;
 }
@@ -157,7 +156,7 @@ void handleInputs(
   auto [_, ballPosition] = *ball.begin();
 
   for (auto &[pl, pos, vel] : iter) {
-    if(std::fabs(vel->y) > 0) {
+    if (std::fabs(vel->y) > 0) {
       vel->y *= 0.90;
     }
 
@@ -181,14 +180,6 @@ void handleInputs(
     }
   }
 
-  if (inputs.wasKeyPressed(KEY_SPACE)) {
-    auto &ts = r.level.getResource<TimeScale>()->get();
-    if (ts == 0.1f)
-      ts = TimeScale(1.0f);
-    else
-      ts = TimeScale(0.1f);
-  }
-
   if (inputs.wasKeyPressed(KEY_ESCAPE)) {
     auto &paused = r.level.getResource<Paused>()->get();
     paused       = Paused(!paused);
@@ -203,11 +194,10 @@ void moveObjects(ecs::ResourceBundle r, ecs::ComponentIter<Pos2D, Velocity> iter
   }
 
   const auto dt = r.global.getResource<DeltaTime>()->get();
-  const auto ts = r.level.getResource<TimeScale>()->get();
 
   for (auto &[pos, vel] : iter) {
-    pos->x += vel->x * dt * ts;
-    pos->y += vel->y * dt * ts;
+    pos->x += vel->x * dt;
+    pos->y += vel->y * dt;
   }
 }
 
@@ -392,7 +382,7 @@ void resetGame(
   *ballVel = Velocity{ballSpeed, 0};
 }
 
-void setupMainGame(ecs::Resources& global, ecs::Level &mg) {
+void setupMainGame(ecs::Resources &global, ecs::Level &mg) {
 
   const f32 sw = global.getResource<ScreenWidth>()->get();
   const f32 sh = global.getResource<ScreenHeight>()->get();
@@ -438,7 +428,6 @@ void setupMainGame(ecs::Resources& global, ecs::Level &mg) {
   {
     mg.addResource(Paused{false});
     mg.addResource(Round{0});
-    mg.addResource(TimeScale{1.0f});
 
     // Note the extra curly brace pair since we're wrapping a MenuScreen struct
     mg.addResource(PauseScreen{{

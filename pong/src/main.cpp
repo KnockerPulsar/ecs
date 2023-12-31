@@ -10,24 +10,12 @@
 
 #include <string>
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 
   InitWindow(800, 800, "ecs-pong");
   SetTargetFPS(GetMonitorRefreshRate(0));
 
   ecs::ECS ecs;
-
-  if(argc == 3) {
-    using Recorder = pong::Input::Recorder;
-    auto argStr = std::string(argv[1]);
-
-    if(argStr == "--playback") {
-      ecs.addGlobalResource(Recorder(Recorder::Mode::Playback, std::string(argv[2])));
-    } else if(argStr == "--record") {
-      ecs.addGlobalResource(Recorder(Recorder::Mode::Recording, std::string(argv[2])));
-    }   
-  }
-
 
   // Resources that are shared for all levels
   {
@@ -48,17 +36,12 @@ int main(int argc, char** argv) {
     ecs.addGlobalResourceSystemPost(pong::Renderer::system);
     ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
     ecs.addGlobalResourceSystemPost([](ecs::Resources &global) {
-      auto &dt    = global.getResource<pong::DeltaTime>()->get();
-      auto &time  = global.getResource<pong::Time>()->get();
-      auto &frame = global.getResource<pong::Frame>()->get();
+      auto &dt   = global.getResource<pong::DeltaTime>()->get();
+      auto &time = global.getResource<pong::Time>()->get();
 
-
-      frame++;
-      // Clamp to ease debugging 
-      dt = pong::DeltaTime(std::min(GetFrameTime(), 1/60.f)); 
+      dt = pong::DeltaTime(GetFrameTime());
       time += GetFrameTime();
     });
-
   }
 
   // Levels and their setup code
