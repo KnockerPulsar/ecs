@@ -10,14 +10,12 @@ template <typename... Ts>
 struct MultiIterator {
 
   struct iterator {
-    using opt_value_type = std::tuple<OptIter<Ts>...>;
-    using value_type     = std::tuple<Iter<Ts>...>;
-    using pointer        = value_type *;
-    using reference      = value_type &;
-
-    uint                offset = 0, maxOffset = 0;
-    ComponentContainer *cc = nullptr;
-    value_type          refHolder;
+    using iterator_category = std::forward_iterator_tag;
+    using element_type      = std::tuple<Iter<Ts>...>;
+    using opt_value_type    = std::tuple<OptIter<Ts>...>;
+    using pointer           = element_type *;
+    using reference         = element_type &;
+    using difference_type   = std::ptrdiff_t;
 
     iterator() = default;
     iterator(uint offset, uint maxOffset, ComponentContainer *cc) : offset(offset), maxOffset(maxOffset), cc(cc) {}
@@ -79,6 +77,11 @@ struct MultiIterator {
     friend bool operator==(const iterator &a, const iterator &b) {
       return (a.offset == b.offset) && (a.maxOffset == b.maxOffset) && (a.cc == b.cc);
     }
+
+  private:
+    uint                offset = 0, maxOffset = 0;
+    ComponentContainer *cc = nullptr;
+    element_type        refHolder;
   };
 
   MultiIterator(ComponentContainer &cc) {
@@ -107,7 +110,6 @@ struct MultiIterator {
 
   // Need to find the last iterator to have all components so dereferencing works properly.
   // If none exist, we'll return what's equivalent to `begin()`
-  // TODO: could probably be faster to start at the end and return on the first `allSome`, needs `iterator::retreat_all`
   static uint findValidEnd(ComponentContainer &cc) {
     // Should be called `firstAnyNoneAfterLastAllSome` but that's just too long
     auto current = static_cast<int>(cc.numEntities - 1);
