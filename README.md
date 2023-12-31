@@ -10,7 +10,7 @@ An ECS library implementation written with C++20.
 </div>
 
 <div style="text-align:center">
-  <img src="images/game_over.png" alt="Game over preview">
+  <img src="images/win_screen.png" alt="Win screen preview">
 </div>
 
 This library is an implementation of the ECS architecture pattern, _with a twist_. It has four five pillars.
