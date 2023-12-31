@@ -25,8 +25,8 @@ class ECS {
   std::vector<std::function<void()>> globalResourceSystemsPost; // Post-frame systems
 
 public:
-  Resources                          globalResources;           // Resources shared between all levels.
-                                                                
+  Resources globalResources; // Resources shared between all levels.
+
   template <typename... F>
   void addStartupLevel(const std::string &levelName, F &&...setupFunctions) {
     startLevel = _currentLevel = levelName;
@@ -70,7 +70,7 @@ public:
   inline Level &currentLevel() { return levels.find(_currentLevel)->second; }
 
   void runResetSystems() { currentLevel().runResetSystems(); }
-  void runPerFrameSystems() { currentLevel().runSystems(); }
+  void runPerFrameSystems() { currentLevel().runPerFrameSystems(); }
 
   void runSetupSystems() {
     if (_currentLevel.empty()) {

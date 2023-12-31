@@ -51,7 +51,7 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
           .y        = static_cast<u32>(sh / 4.),
           .baseSize = 80,
       },
-      TextAnimation{.animate = sinAnimation, .animationSpeed = 200 },
+      TextAnimation{.animate = sinAnimation, .animationSpeed = 200},
       CenterText{}
   );
 
@@ -119,20 +119,22 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
               },
           },
 
-      .staticContent = {
+      .staticContent =
           {
-              Text{
-                  .text     = "W/S or Up/Down arrows to move paddle/menu option",
-                  .color    = WHITE,
-                  .baseSize = 25,
+              {
+                  Text{
+                      .text     = "W/S or Up/Down arrows to move paddle/menu option",
+                      .color    = WHITE,
+                      .baseSize = 25,
+                  },
+                  Text{
+                      .text     = "Enter to chose menu option, Escape to open pause menu",
+                      .color    = WHITE,
+                      .baseSize = 25,
+                  },
               },
-              Text{
-                  .text     = "Enter to chose menu option, Escape to open pause menu",
-                  .color    = WHITE,
-                  .baseSize = 25,
-              },
-          },
-      }};
+          }
+  };
 
   mm.addResource(ScreenManager{
       .screens = {mainMenu, difficultyMenu, controlsScreen},

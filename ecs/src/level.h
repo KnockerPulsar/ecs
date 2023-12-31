@@ -29,9 +29,15 @@ struct Level {
 
   ComponentContainer components;
 
+  // Run every frame
   std::vector<std::function<void()>> perFrameSystems;
+
+  // Systems that run when we transition to another level
+  // Meant to reset everything to some initial state.
   std::vector<std::function<void()>> resetSystems;
 
+  // Run whenever the system is fresh (first time, or after a reset)
+  // Add entities, systems, and level/global resources.
   std::vector<std::function<void(Resources &, Level &)>> setupSystems;
 
   Resources  levelResources;
@@ -94,7 +100,7 @@ struct Level {
   }
 
   template <typename F>
-  requires(MatchSignature<F, void, ecs::Resources&, ecs::Level&>)
+  requires(MatchSignature<F, void, ecs::Resources &, ecs::Level &>)
   void addSetupSystem(F &&fn) {
     setupSystems.push_back(fn);
   }
@@ -122,11 +128,6 @@ private:
     for (auto &[_, op] : components.componentOperations) {
       op.removeComponent(eid);
     }
-  }
-
-  template <typename T>
-  std::optional<std::reference_wrapper<Vector<T>>> getComponentVector() {
-    return components.getComponentVector<T>();
   }
 
   void copyComponents(Commands &cmd, Entity sourceId, Entity destId) {
@@ -199,7 +200,7 @@ private:
     hasBeenSetup = true;
   }
 
-  void runSystems() {
+  void runPerFrameSystems() {
     for (auto &sys : perFrameSystems) {
       sys();
     }
