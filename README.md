@@ -13,7 +13,7 @@ An ECS library implementation written with C++20.
   <img src="images/win_screen.png" alt="Win screen preview">
 </div>
 
-This library is an implementation of the ECS architecture pattern, _with a twist_. It has four five pillars.
+This library is an implementation of the ECS architecture pattern, _with a twist_. It has five main pillars.
 1. Entities: collections of components
 2. Components: Carry data 
 3. Systems: Manipulate data
