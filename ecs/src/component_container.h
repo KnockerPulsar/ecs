@@ -1,7 +1,6 @@
 #pragma once
 
 #include "defs.h"
-#include "tuple_utils.h"
 
 #include <any>
 #include <functional>
@@ -11,7 +10,11 @@
 
 namespace ecs {
 
+// Dense component storage.
+// Each extra component adds an extra vector with space for all existing entities.
 struct ComponentContainer {
+
+  // Hold compile time information about the type of the component.
   struct ComponentOperation {
     std::function<void()>                                     pushDummy;
     std::function<void(ComponentContainer &, Entity, Entity)> moveComponent;
@@ -21,6 +24,7 @@ struct ComponentContainer {
   friend class ECS;
   friend struct Commands;
 
+  // Contain the data for all entities
   std::unordered_map<std::type_index, std::any> componentVectors;
 
   // Need something to map a type id to a std::vector<T>::push_back
@@ -28,6 +32,7 @@ struct ComponentContainer {
 
   uint32_t numEntities = 0;
 
+  // Given a type, get an optional (might not exist) reference to its component vector.
   template <typename T>
   std::optional<std::reference_wrapper<Vector<T>>> getComponentVector() {
     if (!componentVectors.contains(typeid(T))) {
@@ -37,7 +42,7 @@ struct ComponentContainer {
     // NOTE: map::operator[] default constructs at whatever key you're looking
     // up if there's no value there. In this case, it constructs an empty
     // `std::any`
-    return std::any_cast<Vector<T> &>(componentVectors[typeid(T)]);
+    return std::any_cast<Vector<T> &>(componentVectors.at(typeid(T)));
   }
 
   template <typename... Ts>
@@ -55,37 +60,28 @@ struct ComponentContainer {
   }
 
   // Optional over the OptIters since the component vector might not exist.
-  template <typename T2, typename... Ts2>
-  using EntityQueryResult = std::tuple<std::optional<OptIter<T2>>, std::optional<OptIter<Ts2>>...>;
+  template <typename... Ts>
+  using EntityQueryResult = std::tuple<std::optional<OptIter<Ts>>...>;
 
-  template <typename T2, typename... Ts2>
-  EntityQueryResult<T2, Ts2...> getBegins() {
-    return getEntityComponents<T2, Ts2...>(0);
-  }
+  template <typename T>
+  std::optional<OptIter<T>> getEntityComponentIter(Entity eid) {
+    auto compVec = getComponentVector<T>();
 
-  template <typename T2, typename... Ts2>
-  EntityQueryResult<T2, Ts2...> getEnds() {
-    return getEntityComponents<T2, Ts2...>(numEntities - 1);
-  }
-
-  template <typename T2, typename... Ts2>
-  EntityQueryResult<T2, Ts2...> getEntityComponents(uint entityId) {
-    auto compVec = getComponentVector<T2>();
-
-    std::tuple<std::optional<ecs::OptIter<T2>>> t_begin =
-        std::make_tuple(compVec.has_value() ? (compVec->get().begin() + entityId) : std::optional<ecs::OptIter<T2>>());
-
-    if constexpr (sizeof...(Ts2) > 0) {
-      auto remaining = getEntityComponents<Ts2...>(entityId);
-      return std::tuple_cat(t_begin, remaining);
-    } else {
-      return t_begin;
+    if (!compVec.has_value()) {
+      return {};
     }
+
+    return compVec->get().begin() + eid;
+  }
+
+  template <typename... Ts>
+  EntityQueryResult<Ts...> getEntityComponents(uint entityId) {
+    return std::make_tuple(getEntityComponentIter<Ts>(entityId)...);
   }
 
   template <typename... Ts>
   bool allComponentsExist() {
-    return allSome(getBegins<Ts...>());
+    return (getComponentVector<Ts>().has_value() && ...);
   }
 
   template <typename... Ts>
