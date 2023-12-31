@@ -1,8 +1,9 @@
-#include "common/input.h"
 #include "ecs.h"
-
 #include "level.h"
+
 #include "common/common.h"
+#include "common/input.h"
+
 #include "levels/game_over.h"
 #include "levels/main_game.h"
 #include "levels/main_menu.h"

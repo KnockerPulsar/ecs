@@ -1,10 +1,10 @@
 #pragma once
 
-#include "defs.h"
 #include "level.h"
 #include "resources.h"
+
+#include <cassert>
 #include <functional>
-#include <type_traits>
 #include <unordered_map>
 
 namespace ecs {

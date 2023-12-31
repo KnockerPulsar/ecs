@@ -1,9 +1,13 @@
-#include "common/common.h"
+#pragma once
+
 #include "ecs.h"
 #include "level.h"
-#include "levels/main_menu.h"
-#include "raylib.h"
 #include "resources.h"
+
+#include "common/common.h"
+#include "levels/main_menu.h"
+
+#include "raylib.h"
 
 namespace pong {
 void setupGameOver(ecs::Resources &global, ecs::Level &go) {

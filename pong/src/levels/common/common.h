@@ -2,6 +2,7 @@
 
 #include "defs.h"
 #include "resources.h"
+#include "multi_iterator.h"
 
 #include "common/input.h"
 #include "common/res.h"

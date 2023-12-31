@@ -34,3 +34,5 @@ template <typename Fn, typename Return, typename... Args>
 concept MatchSignature = std::is_invocable_r_v<Return, Fn, Args...>;
 
 } // namespace ecs
+
+#include "multi_iterator.h"

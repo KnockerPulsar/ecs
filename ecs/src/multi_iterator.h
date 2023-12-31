@@ -1,14 +1,8 @@
 #pragma once
 
-#include "commands.h"
 #include "component_container.h"
 #include "defs.h"
-#include "level.h"
 #include "tuple_utils.h"
-
-#include <algorithm>
-#include <cassert>
-#include <functional>
 
 namespace ecs {
 

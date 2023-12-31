@@ -1,8 +1,8 @@
+#pragma once
 
 #include "ecs.h"
 #include "level.h"
 #include "resources.h"
-
 
 #include "common/common.h"
 #include "levels/main_menu.h"

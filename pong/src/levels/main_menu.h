@@ -1,9 +1,9 @@
 #pragma once
-
-#include "common/common.h"
 #include "ecs.h"
 #include "level.h"
 #include "resources.h"
+
+#include "common/common.h"
 
 #include <functional>
 #include <string>

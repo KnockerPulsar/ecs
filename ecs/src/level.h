@@ -4,23 +4,15 @@
 #include "defs.h"
 #include "resources.h"
 #include "component_container.h"
-#include "multi_iterator.h"
 #include "commands.h"
 #include "tuple_utils.h"
 // clang-format on
 
-#include <algorithm>
-#include <any>
-#include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <iterator>
 #include <optional>
-#include <string>
 #include <tuple>
 #include <type_traits>
-#include <typeindex>
-#include <typeinfo>
 #include <unordered_map>
 #include <utility>
 
