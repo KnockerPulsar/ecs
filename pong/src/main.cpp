@@ -14,10 +14,16 @@
 #include <cstdint>
 #include <iostream>
 #include <string>
+#include <fstream>
 
-int main() {
+struct InputRecorder {
+  std::vector<pong::Input> frameInputs;
+};
+
+int main(int argc, char** argv) {
 
   InitWindow(800, 800, "ecs-pong");
+  SetTargetFPS(120);
 
   ecs::ECS ecs;
 

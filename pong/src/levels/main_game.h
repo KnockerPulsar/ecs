@@ -16,7 +16,7 @@ const auto paddleWidth         = 20;
 const auto paddleHeight        = 100;
 const auto paddleOffset        = paddleWidth;
 const auto playerMovementSpeed = 1200.0f;
-const auto maxGoals            = 2;
+const auto maxGoals            = 10;
 const auto scoreY              = 20;
 
 enum class Player : u8 { Human, AI };
@@ -136,10 +136,15 @@ void moveAI(ecs::ResourceBundle r, Pos2D &pos, Pos2D &ballPosition, Velocity &ve
   if (frac(time) < slowness)
     return;
 
-  const auto playerCenter = pos.y + paddleHeight;
-  const auto signDy       = -sign(playerCenter - ballPosition.y);
+  const auto playerCenter = pos.y + paddleHeight / 2;
+  const auto dy = (playerCenter - ballPosition.y) / paddleHeight;
 
-  vel.y = playerMovementSpeed * signDy * speed;
+  if(std::fabs(dy) < 0.45) 
+    return;
+
+  const auto signDy       = sign(dy);
+
+  vel.y = -playerMovementSpeed * signDy * speed;
 }
 
 void handleInputs(
@@ -148,12 +153,14 @@ void handleInputs(
 
   const auto &inputs = r.global.getResource<Input>()->get();
   const auto  sh     = r.global.getResource<ScreenWidth>()->get();
+  const auto dt      = r.global.getResource<DeltaTime>()->get();
 
   auto [_, ballPosition] = *ball.begin();
 
   for (auto &[pl, pos, vel] : iter) {
-    vel->x *= (0.975);
-    vel->y *= (0.975);
+    if(std::fabs(vel->y) > 0) {
+      vel->y *= 0.90;
+    }
 
     switch (*pl) {
     case Player::Human: {
