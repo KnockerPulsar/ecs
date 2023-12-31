@@ -14,7 +14,7 @@ An ECS library implementation written with C++20.
 </div>
 
 This library is an implementation of the ECS architecture pattern, _with a twist_. It has five main pillars.
-1. Entities: collections of components
+1. Entities: Collections of components
 2. Components: Carry data 
 3. Systems: Manipulate data
 4. Resources: Allow passing arbitrary data between systems in one level, or even between different levels.
