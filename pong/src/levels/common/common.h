@@ -1,43 +1,16 @@
 #pragma once
 
 #include "defs.h"
-#include "ecs.h"
-#include "level.h"
-#include "raylib.h"
 #include "resources.h"
 
+#include "common/input.h"
+#include "common/res.h"
+
 #include <cmath>
+#include <string>
+#include <string_view>
 
 namespace pong {
-
-const auto selectedOptionColor = MAGENTA;
-const auto defaultTextColor    = DARKGRAY;
-
-namespace sceneNames {
-  const std::string mainMenu = "main-menu";
-  const std::string mainGame = "main-game";
-  const std::string gameOver = "game-over";
-} // namespace sceneNames
-
-template <typename T>
-struct Wrapper {
-  T value;
-
-  Wrapper() = default;
-  Wrapper(T &&v) : value(std::move(v)) {}
-  Wrapper(const T &v) : value(v) {}
-
-  // Allow automatic conversion to wrapped value
-  operator const T &() const { return value; }
-  operator T &() { return value; }
-};
-
-struct Time : public Wrapper<f32> {};
-struct DeltaTime : public Wrapper<f32> {};
-struct ScreenWidth : public Wrapper<u32> {};
-struct ScreenHeight : public Wrapper<u32> {};
-enum class GameResult : u8 { Won, Lost };
-
 struct Renderer {
   struct TextCommand {
     u32              x, y;
@@ -134,48 +107,11 @@ struct TextAnimation {
 
 void sinAnimation(ecs::ResourceBundle r, ecs::Iter<Text> t, float animationSpeed) {
   auto &time   = r.global.getResource<Time>()->get();
-  t->fontScale = (std::sin(time * animationSpeed)) / 4 + 0.75;
+  auto &dt = r.global.getResource<DeltaTime>()->get();
+  t->fontScale = (std::sin(time * animationSpeed * dt)) / 4 + 0.75;
 }
 
 struct CenterText {};
-
-struct Input {
-  Input() {
-    for (auto &f : frameKeysDown) {
-      f = false;
-    }
-    for (auto &f : prevFrameKeysDown) {
-      f = false;
-    }
-  }
-
-  static void pollNewInputs(ecs::Resources &global) {
-    auto &input = global.getResource<Input>().value().get();
-
-    for (u32 i = 0; i < input.frameKeysDown.size(); i++) {
-      input.frameKeysDown[i] = IsKeyDown(static_cast<KeyboardKey>(i));
-    }
-  }
-
-  static void onFrameEnd(ecs::Resources &global) {
-    auto &input             = global.getResource<Input>().value().get();
-    input.prevFrameKeysDown = input.frameKeysDown;
-
-    for (auto &f : input.frameKeysDown) {
-      f = false;
-    }
-  }
-
-  bool isKeyDown(KeyboardKey k) const { return frameKeysDown[static_cast<u32>(k)]; }
-
-  bool wasKeyPressed(KeyboardKey k) const {
-    return frameKeysDown[static_cast<u32>(k)] && !prevFrameKeysDown[static_cast<u32>(k)];
-  }
-
-private:
-  // Raylib's `KeyboardKey` enum has a maximum value of 348.
-  std::array<bool, 348> frameKeysDown, prevFrameKeysDown;
-};
 
 struct MenuScreen {
   struct Option {
@@ -192,7 +128,7 @@ struct MenuScreen {
   const static inline u32 optionVerticalStride = 60;
 
   void handleInputs(ecs::ResourceBundle r) {
-    const auto &input = r.global.getResource<Input>()->get();
+    const auto &input = r.global.getResource<pong::Input>()->get();
     if (input.wasKeyPressed(KEY_W)) {
       if (selectedOption == 0) {
         selectedOption = options.size() - 1;

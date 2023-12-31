@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "common/common.h"
 #include "ecs.h"
 #include "level.h"
 #include "resources.h"
@@ -51,7 +51,7 @@ void setupMainMenu(ecs::Resources &global, ecs::Level &mm) {
           .y        = static_cast<u32>(sh / 4.),
           .baseSize = 80,
       },
-      TextAnimation{.animate = sinAnimation, .animationSpeed = 2},
+      TextAnimation{.animate = sinAnimation, .animationSpeed = 200 },
       CenterText{}
   );
 

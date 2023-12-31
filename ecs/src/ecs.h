@@ -21,11 +21,12 @@ class ECS {
   LevelMap    levels;
   std::string startLevel, _currentLevel;
 
-  Resources                          globalResources;           // Resources shared between all levels.
   std::vector<std::function<void()>> globalResourceSystemsPre;  // Pre-frame systems
   std::vector<std::function<void()>> globalResourceSystemsPost; // Post-frame systems
 
 public:
+  Resources                          globalResources;           // Resources shared between all levels.
+                                                                
   template <typename... F>
   [[nodiscard]] Level &addStartupLevel(const std::string &levelName, F &&...setupFunctions) {
     startLevel = _currentLevel = levelName;

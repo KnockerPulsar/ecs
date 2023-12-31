@@ -1,4 +1,4 @@
-#include "common.h"
+#include "common/common.h"
 #include "ecs.h"
 #include "level.h"
 #include "levels/main_menu.h"
@@ -18,7 +18,7 @@ void setupGameOver(ecs::Resources &global, ecs::Level &go) {
           .x     = static_cast<u32>(sw / 2.),
           .y     = static_cast<u32>(sh / 4.),
       },
-      TextAnimation{.animate = sinAnimation, .animationSpeed = 1},
+      TextAnimation{.animate = sinAnimation, .animationSpeed = 100},
       CenterText{}
   );
 

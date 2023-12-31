@@ -1,24 +1,15 @@
-#include "defs.h"
+#include "common/input.h"
 #include "ecs.h"
 
 #include "level.h"
-#include "levels/common.h"
+#include "common/common.h"
 #include "levels/game_over.h"
 #include "levels/main_game.h"
 #include "levels/main_menu.h"
 
 #include "raylib.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cstdint>
-#include <iostream>
 #include <string>
-#include <fstream>
-
-struct InputRecorder {
-  std::vector<pong::Input> frameInputs;
-};
 
 int main(int argc, char** argv) {
 
@@ -27,8 +18,20 @@ int main(int argc, char** argv) {
 
   ecs::ECS ecs;
 
+  if(argc == 3) {
+    auto argStr = std::string(argv[1]);
+
+    if(argStr == "--playback") {
+      ecs.addGlobalResource(pong::Input::Recorder(pong::Input::Recorder::Mode::Playback, std::string(argv[2])));
+    } else if(argStr == "--record") {
+      ecs.addGlobalResource(pong::Input::Recorder(pong::Input::Recorder::Mode::Recording, std::string(argv[2])));
+    }   
+  }
+
+
   // Resources that are shared for all levels
   {
+    ecs.addGlobalResource(pong::Frame{0});
     ecs.addGlobalResource(pong::Time{0.0});
     ecs.addGlobalResource(pong::DeltaTime{1. / 60.});
     ecs.addGlobalResource(pong::ScreenWidth(GetScreenWidth()));
@@ -44,13 +47,16 @@ int main(int argc, char** argv) {
 
     ecs.addGlobalResourceSystemPost(pong::Renderer::system);
     ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
-    ecs.addGlobalResourceSystemPost([](ecs::Resources &r) {
-      auto &dt   = r.getResource<pong::DeltaTime>()->get();
-      auto &time = r.getResource<pong::Time>()->get();
+    ecs.addGlobalResourceSystemPost([](ecs::Resources &global) {
+      auto &dt   = global.getResource<pong::DeltaTime>()->get();
+      auto &time = global.getResource<pong::Time>()->get();
+      auto& frame = global.getResource<pong::Frame>()->get();
 
-      dt = pong::DeltaTime(std::min(GetFrameTime(), 1 / 60.0f));
+      frame++;
+      dt = pong::DeltaTime(GetFrameTime());
       time += GetFrameTime();
     });
+
   }
 
   // Levels and their setup code

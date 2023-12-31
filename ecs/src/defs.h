@@ -1,6 +1,5 @@
 #pragma once
 
-#include <any>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -10,7 +9,6 @@ using u8  = uint8_t;
 using f32 = float;
 
 namespace ecs {
-
 using Entity = std::uint32_t;
 
 template <typename T>

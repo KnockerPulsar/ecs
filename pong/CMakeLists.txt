@@ -19,9 +19,10 @@ set(SOURCES
 
 # Define the directories in which to search for the included headers
 include_directories(
-  src/
   ${ECS_DIR}/
   ${RAYLIB_DIR}/include
+  src/
+  src/levels/
 )
 
 link_directories(${RAYLIB_DIR}/lib)

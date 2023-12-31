@@ -2,6 +2,7 @@
 
 #include <any>
 #include <functional>
+#include <iostream>
 #include <optional>
 #include <typeindex>
 
@@ -10,8 +11,11 @@ struct Resources {
   std::unordered_map<std::type_index, std::any> r;
 
   template <typename R>
-  void addResource(R initialValue) {
-    r.insert_or_assign(typeid(R), initialValue);
+  void addResource(R&& initialValue) {
+    if(r.contains(typeid(R))) {
+      std::cerr<< "Resource already exists\n";
+    }
+    r.insert_or_assign(typeid(R), std::move(initialValue));
   }
 
   template <typename R>

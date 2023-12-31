@@ -1,14 +1,14 @@
-#include "common.h"
-#include "defs.h"
+
 #include "ecs.h"
 #include "level.h"
-#include "levels/main_menu.h"
-#include "raylib.h"
-#include "raymath.h"
 #include "resources.h"
 
-#include <ios>
-#include <unordered_set>
+
+#include "common/common.h"
+#include "levels/main_menu.h"
+
+#include "raylib.h"
+#include "raymath.h"
 
 namespace pong {
 const auto ballSpeed           = 800;
@@ -153,7 +153,6 @@ void handleInputs(
 
   const auto &inputs = r.global.getResource<Input>()->get();
   const auto  sh     = r.global.getResource<ScreenWidth>()->get();
-  const auto dt      = r.global.getResource<DeltaTime>()->get();
 
   auto [_, ballPosition] = *ball.begin();
 
@@ -448,7 +447,7 @@ void setupMainGame(ecs::Resources global, ecs::Level &mg) {
         .options =
             {
                 {
-                    .text = Text{.text = "Unpause"},
+                    .text = Text{.text = "Resume"},
                     .onChosen =
                         [](ecs::ResourceBundle r) {
                           auto &paused = r.level.getResource<Paused>()->get();
