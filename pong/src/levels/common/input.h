@@ -6,7 +6,9 @@
 
 #include <raylib.h>
 
+#include <numeric>
 #include <array>
+#include <map>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -20,6 +22,11 @@ struct Input {
     State() { 
         for(auto& k: frameKeysDown) k = false;
         for(auto& k: prevFrameKeysDown) k = false;
+    }
+
+    bool anyData() const {
+      return std::reduce(frameKeysDown.begin(), frameKeysDown.end(), false, std::logical_or{})
+       || std::reduce(prevFrameKeysDown.begin(), prevFrameKeysDown.end(), false, std::logical_or{}); 
     }
 
     // First comment in https://stackoverflow.com/a/14266139
@@ -78,7 +85,7 @@ struct Input {
 
     Mode mode;
     std::string path;
-    std::vector<State> frameData;
+    std::map<std::size_t, State> frameData;
 
     Recorder(Mode m, std::string p): mode(m), path(p) {
       if(mode == Mode::Playback) {
@@ -88,8 +95,23 @@ struct Input {
       }
     }
 
+    Recorder() = delete;
+    Recorder(const Recorder& copy) = default;
+
+    Recorder& operator=(Recorder&& move) noexcept {
+      mode = move.mode;
+      path = std::move(move.path);
+      frameData = std::move(move.frameData);
+
+      return *this;
+    }
+
+    Recorder(Recorder&& move) noexcept {
+      *this = std::move(move);
+    }
+
     ~Recorder() {
-      if(mode == Mode::Recording) {
+      if(mode == Mode::Recording && !path.empty()) {
         std::cout << "Writing recording to: " << path << '\n';
         std::ofstream  recording{path};
         recording << *this;
@@ -98,20 +120,22 @@ struct Input {
 
     friend std::istream& operator>>(std::istream& istream, Recorder& ipr) { 
       std::string line;
-      State ip;
 
-      while(istream >> ip) { 
+      while(std::getline(istream, line)) { 
+        std::size_t frame = std::stoi(line);
+
+        State ip;
+        istream >> ip;
+
         // Read the input state at that frame
-        ipr.frameData.push_back(ip);
-
-        std::getline(istream, line); // Skip the newline between entires
+        ipr.frameData.insert({frame, ip});
       }
 
       return istream;
     }
 
     friend std::ostream& operator<<(std::ostream& ostream, const Recorder& ipr) {
-      for(const auto& ip: ipr.frameData)  { ostream << ip << '\n'; }
+      for(const auto& [frame, data]: ipr.frameData)  { ostream << frame << '\n' << data; }
       return ostream;
     };
   };
@@ -119,10 +143,17 @@ struct Input {
   static void pollNewInputs(ecs::Resources &global) {
       auto &input = global.getResource<Input>()->get();
 
-      auto ipr   = global.getResource<Recorder>();
-      if(ipr && ipr->get().mode == Recorder::Mode::Playback) {
+      auto ipr_opt   = global.getResource<Recorder>();
+      if(ipr_opt && ipr_opt->get().mode == Recorder::Mode::Playback) {
+        auto& ipr = ipr_opt->get();
         auto frame = global.getResource<Frame>()->get();
-        input.state = ipr->get().frameData.at(frame);
+
+        auto iter = ipr.frameData.find(frame);
+        if(iter != ipr.frameData.end()) {
+          input.state = iter->second;
+        } else {
+          input.state = State{};
+        }
       } else {
         for (u32 i = 0; i < input.state.frameKeysDown.size(); i++) {
           input.state.frameKeysDown[i] = IsKeyDown(static_cast<KeyboardKey>(i));
@@ -131,14 +162,15 @@ struct Input {
   }
 
   static void onFrameEnd(ecs::Resources &global) {
-    auto &input = global.getResource<Input>().value().get();
+    auto &input = global.getResource<Input>()->get();
     auto ipr   = global.getResource<Recorder>();
+    auto frame   = global.getResource<Frame>()->get();
 
     if(ipr) {
       switch (ipr->get().mode) {
       case Recorder::Mode::Recording:
         // Record the state before any modifications
-        ipr->get().frameData.push_back(input.state); 
+        ipr->get().frameData.insert({frame, input.state});
         break;
       case Recorder::Mode::Playback:
         // do nothing and return
@@ -147,7 +179,7 @@ struct Input {
     } 
 
     input.state.prevFrameKeysDown = input.state.frameKeysDown;
-    for (auto &f : input.state.frameKeysDown) { f = false; }
+    input.state.frameKeysDown = {};
   }
 
   bool isKeyDown(KeyboardKey k) const { return state.frameKeysDown[static_cast<u32>(k)]; }

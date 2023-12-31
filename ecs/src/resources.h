@@ -10,6 +10,13 @@ namespace ecs {
 struct Resources {
   std::unordered_map<std::type_index, std::any> r;
 
+  Resources() = default;
+  Resources(const Resources& copy) = delete;
+  Resources& operator=(const Resources& copy) = delete;
+
+  Resources& operator=(Resources&& move) noexcept = default;
+  Resources(Resources&& move) noexcept = default;
+
   template <typename R>
   void addResource(R&& initialValue) {
     if(r.contains(typeid(R))) {

@@ -28,24 +28,17 @@ public:
   Resources                          globalResources;           // Resources shared between all levels.
                                                                 
   template <typename... F>
-  [[nodiscard]] Level &addStartupLevel(const std::string &levelName, F &&...setupFunctions) {
+  void addStartupLevel(const std::string &levelName, F &&...setupFunctions) {
     startLevel = _currentLevel = levelName;
-
-    return addLevel(levelName, setupFunctions...);
+    addLevel(levelName, setupFunctions...);
   }
 
   template <typename... F>
-  [[nodiscard]] Level &addLevel(const std::string &levelName, F &&...setupFunctions) {
-    auto [iter, inserted] = levels.insert({levelName, Level{.globalResources = globalResources}});
+  void addLevel(const std::string &levelName, F &&...setupFunctions) {
+    auto [iter, inserted] = levels.emplace(levelName, Level{.globalResources = globalResources});
     assert(inserted);
 
     (iter->second.addSetupSystem(setupFunctions), ...);
-
-    return iter->second;
-  }
-
-  void addEmptyLevel(const std::string &levelName) {
-    levels.insert({levelName, Level{.globalResources = globalResources}});
   }
 
   // Just some code to run when setting up a level
@@ -99,7 +92,7 @@ public:
   // To add global resources while setting up scenes.
   template <typename R>
   void addGlobalResource(R &&resource) {
-    globalResources.addResource(resource);
+    globalResources.addResource(std::forward<R>(resource));
   }
 
   template <typename F>

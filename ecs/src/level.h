@@ -94,6 +94,7 @@ struct Level {
   }
 
   template <typename F>
+  requires(MatchSignature<F, void, ecs::Resources&, ecs::Level&>)
   void addSetupSystem(F &&fn) {
     setupSystems.push_back(fn);
   }

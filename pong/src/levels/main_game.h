@@ -392,7 +392,7 @@ void resetGame(
   *ballVel = Velocity{ballSpeed, 0};
 }
 
-void setupMainGame(ecs::Resources global, ecs::Level &mg) {
+void setupMainGame(ecs::Resources& global, ecs::Level &mg) {
 
   const f32 sw = global.getResource<ScreenWidth>()->get();
   const f32 sh = global.getResource<ScreenHeight>()->get();
