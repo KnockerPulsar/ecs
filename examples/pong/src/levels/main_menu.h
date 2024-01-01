@@ -1,7 +1,8 @@
 #pragma once
-#include "ecs.h"
-#include "level.h"
-#include "resources.h"
+
+#include "ecs/ecs.h"
+#include "ecs/level.h"
+#include "ecs/resources.h"
 
 #include "common/common.h"
 

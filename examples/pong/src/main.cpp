@@ -1,4 +1,4 @@
-#include "ecs.h"
+#include "ecs/ecs.h"
 
 #include "common/common.h"
 #include "common/input.h"
@@ -7,8 +7,6 @@
 #include "levels/main_menu.h"
 
 #include "raylib.h"
-
-#include <string>
 
 int main(int argc, char **argv) {
 

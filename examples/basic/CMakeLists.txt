@@ -6,9 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 
-set(ECS_DIR ../../ecs/src)
+set(ECS_DIR ../../ecs/)
 
-include_directories( ${ECS_DIR}/ )
+include_directories( 
+	${ECS_DIR}/include
+)
 
 add_executable(${PROJECT_NAME} basic.cpp)
 target_link_libraries(${PROJECT_NAME})

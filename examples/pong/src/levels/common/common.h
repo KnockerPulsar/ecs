@@ -1,7 +1,7 @@
 #pragma once
 
-#include "defs.h"
-#include "resources.h"
+#include "ecs/defs.h"
+#include "ecs/resources.h"
 
 #include "common/input.h"
 #include "common/res.h"
