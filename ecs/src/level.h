@@ -1,11 +1,13 @@
 #pragma once
 
 // clang-format off
+#include "archetypes.h"
 #include "defs.h"
 #include "resources.h"
 #include "component_container.h"
 #include "commands.h"
 #include "tuple_utils.h"
+#include "type_set.h"
 // clang-format on
 
 #include <functional>
@@ -27,7 +29,7 @@ struct OptTupleUnwrapper;
 struct Level {
   friend class ECS;
 
-  ComponentContainer components;
+  Archetypes archetypes;
 
   // Run every frame
   std::vector<std::function<void()>> perFrameSystems;
@@ -45,8 +47,12 @@ struct Level {
   bool       hasBeenSetup = false;
 
   template <typename... Ts>
-  Entity addEntity(Ts &&...comps) {
-    return components.addEntity(std::forward<Ts>(comps)...);
+  void addEntity(Ts &&...comps) {
+    const auto typeset = TypeSet({typeid(Ts)...});
+    if (!archetypes.contains(typeset)) {
+      archetypes.insert(typeset, Archetype::create<Ts...>());
+    }
+    archetypes.at(typeset).addEntity(comps...);
   }
 
   // 2 possible inputs: resources, queries
@@ -107,7 +113,7 @@ struct Level {
 
   // Wipe the level clean, allowing setup systems to be run again;
   void completeReset() {
-    components.clear();
+    archetypes.clear();
     perFrameSystems.clear();
     resetSystems.clear();
     levelResources.clear();
@@ -115,39 +121,30 @@ struct Level {
   }
 
 private:
-  Entity addEmptyEntity() {
-    // Make space for the new entities
-    for (auto &[_, op] : components.componentOperations) {
-      op.pushDummy();
-    }
+  /* void removeEntity(Entity eid) { */
+  /*   for (auto &[_, op] : components.componentOperations) { */
+  /*     op.removeComponent(eid); */
+  /*   } */
+  /* } */
 
-    return components.numEntities++;
-  }
+  /* void copyComponents(Commands &cmd, Entity sourceId, Entity destId) { */
+  /*   for (auto &[typeId, anyVec] : cmd.entitiesToAdd.componentVectors) { */
+  /*     cmd.entitiesToAdd.componentOperations[typeId].moveComponent(components, sourceId, destId); */
+  /*   } */
+  /* } */
 
-  void removeEntity(Entity eid) {
-    for (auto &[_, op] : components.componentOperations) {
-      op.removeComponent(eid);
-    }
-  }
-
-  void copyComponents(Commands &cmd, Entity sourceId, Entity destId) {
-    for (auto &[typeId, anyVec] : cmd.entitiesToAdd.componentVectors) {
-      cmd.entitiesToAdd.componentOperations[typeId].moveComponent(components, sourceId, destId);
-    }
-  }
-
-  void processCommands(Commands &cmd) {
-    // Loops over all added entities, creates an empty one in the ECS storage,
-    // then moves over all components from `entitiesToAdd` to the ECS storage.
-    for (uint32_t sourceId = 0; sourceId < cmd.entitiesToAdd.numEntities; sourceId++) {
-      auto destId = addEmptyEntity();
-      copyComponents(cmd, sourceId, destId);
-    }
-
-    for (auto &&eid : cmd.entitiesToRemove) {
-      removeEntity(eid);
-    }
-  }
+  /* void processCommands(Commands &cmd) { */
+  /*   // Loops over all added entities, creates an empty one in the ECS storage, */
+  /*   // then moves over all components from `entitiesToAdd` to the ECS storage. */
+  /*   for (uint32_t sourceId = 0; sourceId < cmd.entitiesToAdd.numEntities; sourceId++) { */
+  /*     auto destId = addEmptyEntity(); */
+  /*     copyComponents(cmd, sourceId, destId); */
+  /*   } */
+  /*  */
+  /*   for (auto &&eid : cmd.entitiesToRemove) { */
+  /*     removeEntity(eid); */
+  /*   } */
+  /* } */
 
   // Add system with access to only to resources.
   template <typename R, typename F>
@@ -160,13 +157,14 @@ private:
   // Add system WITHOUT access to resources.
   template <typename... Query, typename F>
   void addSystemQueryOnly(std::vector<std::function<void()>> &systemCollection, F &&fn) {
-    systemCollection.push_back([this, fn]() {
-      auto queryIters = std::make_tuple(components.getQueryIter(Query{})...);
+    if (!(archetypes.contains(TypeSet(Query{})) && ...)) {
+      std::cerr << "One of the passed queries has no existing archetypes!\n";
+      return;
+    };
 
-      if (allSome(queryIters)) {
-        const auto unwrappedIters = unwrapTuple(queryIters);
-        std::apply(fn, unwrappedIters);
-      }
+    systemCollection.push_back([this, fn]() {
+      auto queryIters = std::make_tuple(archetypes.getQueryIter(Query{})...);
+      std::apply(fn, queryIters);
     });
   }
 
@@ -176,14 +174,15 @@ private:
   // sees that Query = {void(ecs::ResourceBundle)} and F = void(ecs::ResourceBundle) for some reason.
   template <typename R, typename... Query, typename F>
   void addSystem(std::vector<std::function<void()>> &systemCollection, F &&fn) {
-    systemCollection.push_back([this, fn]() {
-      auto queryIters = std::make_tuple(components.getQueryIter(Query{})...);
+    if (!(archetypes.contains(TypeSet(Query{})) && ...)) {
+      std::cerr << "One of the passed queries has no existing archetypes!\n";
+      return;
+    };
 
-      if (allSome(queryIters)) {
-        const auto unwrappedIters = unwrapTuple(queryIters);
-        auto       rb             = ResourceBundle{.global = globalResources, .level = levelResources};
-        std::apply(fn, std::tuple_cat(std::make_tuple(rb), unwrappedIters));
-      }
+    systemCollection.push_back([this, fn]() {
+      auto queryIters = std::make_tuple(archetypes.getQueryIter(Query{})...);
+      auto rb         = ResourceBundle{.global = globalResources, .level = levelResources};
+      std::apply(fn, std::tuple_cat(std::make_tuple(rb), queryIters));
     });
   }
 
@@ -205,9 +204,9 @@ private:
       sys();
     }
 
-    if (auto cmd = levelResources.getResource<Commands>()) {
-      processCommands(*cmd);
-    }
+    /* if (auto cmd = levelResources.getResource<Commands>()) { */
+    /*   processCommands(*cmd); */
+    /* } */
   }
 
   void runResetSystems() {

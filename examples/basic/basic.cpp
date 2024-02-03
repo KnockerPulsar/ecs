@@ -1,4 +1,5 @@
 #include "defs.h"
+#include "multi_iterator.h"
 #include "ecs.h"
 #include "level.h"
 #include "resources.h"

@@ -23,16 +23,14 @@ using Iter = typename std::vector<T>::iterator;
 template <typename... Ts>
 using Query = std::tuple<Ts...>;
 
-// Forward decl
-template <typename... Ts>
-struct MultiIterator;
-
-template <typename... Ts>
-using ComponentIter = MultiIterator<Ts...>;
-
 template <typename Fn, typename Return, typename... Args>
 concept MatchSignature = std::is_invocable_r_v<Return, Fn, Args...>;
 
-} // namespace ecs
+// Forward decl
+template <typename... Ts>
+class QueryView;
 
-#include "multi_iterator.h"
+template <typename... Ts>
+using ComponentIter = QueryView<Ts...>;
+
+} // namespace ecs

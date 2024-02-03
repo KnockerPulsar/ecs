@@ -107,7 +107,7 @@ struct TextAnimation {
 
 void sinAnimation(ecs::ResourceBundle r, ecs::Iter<Text> t, float animationSpeed) {
   auto &time   = r.global.getResource<Time>()->get();
-  auto &dt = r.global.getResource<DeltaTime>()->get();
+  auto &dt     = r.global.getResource<DeltaTime>()->get();
   t->fontScale = (std::sin(time * animationSpeed * dt)) / 4 + 0.75;
 }
 
