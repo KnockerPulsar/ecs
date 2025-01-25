@@ -55,6 +55,9 @@ public:
     return QueryView(iters);
   }
 
+
+  auto size() const { return archetypes.size(); }
+
 private:
   std::unordered_map<TypeSet, Archetype> archetypes;
 };

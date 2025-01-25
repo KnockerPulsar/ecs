@@ -1,7 +1,12 @@
 #pragma once
 
+#include "defs.h"
+#include <initializer_list>
 #include <optional>
+#include <sstream>
+#include <string>
 #include <tuple>
+#include <typeinfo>
 
 namespace ecs {
 
@@ -50,6 +55,23 @@ std::tuple<Ts...> unwrapTuple(std::tuple<std::optional<Ts>...> tuple) {
 template <typename... Ts>
 static bool allSome(std::tuple<std::optional<Ts>...> tuple) {
   return std::apply([](auto &&...args) { return (args.has_value() && ...); }, tuple);
+}
+
+template <typename... Ts>
+static std::string print(ecs::Query<Ts...> tuple) {
+  auto const        type_names = std::initializer_list{typeid(Ts).name()...};
+
+  std::stringstream ss;
+
+  ss << "(";
+  for (auto iter = type_names.begin(); iter != type_names.end(); iter++) {
+    ss << std::string(*iter);
+    if (iter != type_names.end() - 1)
+      ss << ", ";
+  }
+  ss << ")";
+
+  return ss.str();
 }
 
 } // namespace ecs
