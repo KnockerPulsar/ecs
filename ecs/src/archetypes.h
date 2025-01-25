@@ -5,7 +5,6 @@
 #include "multi_iterator.h"
 #include "type_set.h"
 #include <algorithm>
-#include <typeindex>
 #include <vector>
 
 namespace ecs {
@@ -23,7 +22,15 @@ private:
 
 class Archetypes {
 public:
-  bool contains(const TypeSet &qts) const {
+  // Check if any archetype _exactly_ matches the given typeset
+  bool containsExact(const TypeSet &qts) const {
+    return std::any_of(archetypes.cbegin(), archetypes.cend(), [&qts](const auto &pair) {
+      const auto &ts = pair.first;
+      return qts == ts;
+    });
+  }
+
+  bool containsSubset(const TypeSet &qts) const {
     return std::any_of(archetypes.cbegin(), archetypes.cend(), [&qts](const auto &pair) {
       const auto &ts = pair.first;
       return qts.isSubsetOf(ts);
@@ -55,6 +62,9 @@ public:
     return QueryView(iters);
   }
 
+  auto begin() const { return archetypes.cbegin(); }
+
+  auto end() const { return archetypes.cend(); }
 
   auto size() const { return archetypes.size(); }
 

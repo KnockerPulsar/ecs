@@ -49,7 +49,7 @@ struct Level {
   template <typename... Ts>
   void addEntity(Ts &&...comps) {
     const auto typeset = TypeSet({typeid(Ts)...});
-    if (!archetypes.contains(typeset)) {
+    if (!archetypes.containsExact(typeset)) {
       archetypes.insert(typeset, Archetype::create<Ts...>());
     }
     archetypes.at(typeset).addEntity(comps...);
@@ -157,8 +157,8 @@ private:
   // Add system WITHOUT access to resources.
   template <typename... Query, typename F>
   void addSystemQueryOnly(std::vector<std::function<void()>> &systemCollection, F &&fn) {
-    if (!(archetypes.contains(TypeSet(Query{})) && ...)) {
-      std::cerr << "One of the passed queries has no existing archetypes!\n";
+    if (!(archetypes.containsSubset(TypeSet(Query{})) && ...)) {
+      std::cerr << "One of the passed queries has no existing archetypes!: " << (print(Query{}) + ...) << '\n';
       return;
     };
 
@@ -174,8 +174,8 @@ private:
   // sees that Query = {void(ecs::ResourceBundle)} and F = void(ecs::ResourceBundle) for some reason.
   template <typename R, typename... Query, typename F>
   void addSystem(std::vector<std::function<void()>> &systemCollection, F &&fn) {
-    if (!(archetypes.contains(TypeSet(Query{})) && ...)) {
-      std::cerr << "One of the passed queries has no existing archetypes!\n";
+    if (!(archetypes.containsSubset(TypeSet(Query{})) && ...)) {
+      std::cerr << "One of the passed queries has no existing archetypes!: " << (print(Query{}) + ...) << '\n';
       return;
     };
 
