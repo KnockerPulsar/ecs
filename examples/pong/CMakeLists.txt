@@ -1,13 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)   # Selects the minimum version of CMake required to run this file
 project(ecs-pong VERSION 0.1.0)          # Here we select the project name and version
-
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -flto -march=native")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -Wall")
 
 CMAKE_POLICY(SET CMP0074 NEW)
 
