@@ -4,7 +4,10 @@
 
 #include <cstddef>
 #include <functional>
+#include <iostream>
+#include <iterator>
 #include <set>
+#include <string_view>
 #include <typeindex>
 
 namespace ecs {
@@ -23,6 +26,18 @@ public:
   bool operator==(const TypeSet &rhs) const { return hash == rhs.hash; }
 
   bool isSubsetOf(const TypeSet &ts) const { return std::includes(ts.cbegin(), ts.cend(), cbegin(), cend()); }
+
+  friend std::ostream &operator<<(std::ostream &stream, TypeSet const &ts) {
+    stream << '(';
+    for (auto iter = ts.types.cbegin(); iter != ts.types.cend(); iter++) {
+      stream << iter->name();
+      if (iter != std::prev(ts.types.cend()))
+        stream << ", ";
+    }
+    stream << ')';
+
+    return stream;
+  }
 
 private:
   static std::size_t computeHash(std::initializer_list<std::type_index> ts) {
