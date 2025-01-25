@@ -1,5 +1,4 @@
 #include "defs.h"
-#include "multi_iterator.h"
 #include "ecs.h"
 #include "level.h"
 #include "resources.h"
@@ -60,7 +59,7 @@ void damageEnemies(ecs::ComponentIter<Player, Pos2D> player, ecs::ComponentIter<
   for (const auto &[_, eHealth, ePos] : enemies) {
     const auto dx   = playerPos->x - ePos->x;
     const auto dy   = playerPos->y - ePos->y;
-    const auto dist = std::sqrt(dx * dx + dy * dy);
+    const auto dist = std::sqrt((dx * dx) + (dy * dy));
 
     if (dist < playerComp->range) {
       auto damage    = playerComp->damage / dist;

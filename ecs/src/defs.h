@@ -28,7 +28,7 @@ concept MatchSignature = std::is_invocable_r_v<Return, Fn, Args...>;
 
 // Forward decl
 template <typename... Ts>
-class QueryView;
+struct QueryView;
 
 template <typename... Ts>
 using ComponentIter = QueryView<Ts...>;

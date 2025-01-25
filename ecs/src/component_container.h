@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defs.h"
+#include "multi_iterator.h"
 
 #include <any>
 #include <functional>
