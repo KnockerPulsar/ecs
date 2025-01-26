@@ -46,13 +46,12 @@ struct Level {
   Resources &globalResources; // Obtained from the ECS instance containing this level.
   bool       hasBeenSetup = false;
 
+  std::size_t numEntities = 0;
+
   template <typename... Ts>
-  void addEntity(Ts &&...comps) {
-    const auto typeset = TypeSet({typeid(Ts)...});
-    if (!archetypes.containsExact(typeset)) {
-      archetypes.insert(typeset, Archetype::create<Ts...>());
-    }
-    archetypes.at(typeset).addEntity(comps...);
+  Entity addEntity(Ts &&...comps) {
+    archetypes.addEntity(numEntities, std::forward<Ts>(comps)...);
+    return numEntities++;
   }
 
   // 2 possible inputs: resources, queries
@@ -120,12 +119,11 @@ struct Level {
     hasBeenSetup = false;
   }
 
+  void removeEntity(Entity eid) {
+    archetypes.removeEntity(eid);
+  }
+
 private:
-  /* void removeEntity(Entity eid) { */
-  /*   for (auto &[_, op] : components.componentOperations) { */
-  /*     op.removeComponent(eid); */
-  /*   } */
-  /* } */
 
   /* void copyComponents(Commands &cmd, Entity sourceId, Entity destId) { */
   /*   for (auto &[typeId, anyVec] : cmd.entitiesToAdd.componentVectors) { */

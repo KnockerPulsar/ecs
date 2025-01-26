@@ -28,7 +28,7 @@ auto testArchetypes(ecs::Level& level, int expectedSize)
 }
 
 auto setupTestLevel(ecs::Resources & resources, ecs::Level &level) {
-  level.addEntity(A{}, B{}, C{});
+  auto ab1 = level.addEntity(A{}, B{}, C{});
   level.addEntity(A{}, B{});
   level.addEntity(C{}, B{}, D{});
   level.addEntity(E{});
@@ -39,6 +39,9 @@ auto setupTestLevel(ecs::Resources & resources, ecs::Level &level) {
   testArchetypes<E>(level, 1);
 
   assert(level.archetypes.size() == 4 && "Should have 4 archetypes!");
+
+  level.removeEntity(ab1);
+  testArchetypes<A, B>(level, 1);
 
   resources.addResource(ecs::Quit{});
 }

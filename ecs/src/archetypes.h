@@ -2,9 +2,11 @@
 
 #include "archetype.h"
 #include "chained_iterator.h"
+#include "defs.h"
 #include "multi_iterator.h"
 #include "type_set.h"
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 namespace ecs {
@@ -68,7 +70,30 @@ public:
 
   auto size() const { return archetypes.size(); }
 
+  template <typename... Ts>
+  void addEntity(Entity eid, Ts &&...comps) {
+    const auto typeset = TypeSet({typeid(Ts)...});
+    if (!containsExact(typeset)) {
+      archetypes.emplace(typeset, Archetype::create<Ts...>());
+    }
+    auto& arch = archetypes.at(typeset);
+    arch.addEntity(eid, std::forward<Ts>(comps)...);
+    entityToArchetype.emplace(eid, arch);
+  }
+
+  void removeEntity(Entity eid) {
+    if (!entityToArchetype.contains(eid)) {
+      std::cerr << "Nonexistent entity\n";
+      return;
+    }
+
+    auto& arch = entityToArchetype.at(eid);
+    arch.removeEntity(eid);
+    entityToArchetype.erase(eid);
+  }
+
 private:
   std::unordered_map<TypeSet, Archetype> archetypes;
+  std::unordered_map<Entity, Archetype&> entityToArchetype;
 };
 } // namespace ecs
