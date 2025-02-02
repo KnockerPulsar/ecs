@@ -81,6 +81,7 @@ public:
     for(auto& [_, compVec]: componentVectors)
       compVec.removeElement(index);
     entityToIndex.erase(eid);
+    _size--;
   }
 
   // Given a type, get a reference to its component vector.
