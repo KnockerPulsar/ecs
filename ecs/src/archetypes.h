@@ -56,7 +56,7 @@ public:
     auto       iters = std::vector<MultiIterator<Ts...>>();
 
     for (auto &[ts, arch] : archetypes) {
-      if (qts.isSubsetOf(ts)) {
+      if (qts.isSubsetOf(ts) && arch.size() != 0) {
         iters.push_back(MultiIterator<Ts...>(arch));
       }
     }
