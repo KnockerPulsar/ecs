@@ -21,7 +21,7 @@ struct MultiIterator {
   MultiIterator(Archetype &a) : arch(a) { refHolder = arch.getComponentsAtOffset<Ts...>(0); }
 
   MultiIterator &operator++() {
-    offset++;
+    _offset++;
     // https://stackoverflow.com/a/54053084
     // Advance all iterators in the tuple
     std::apply([](auto &&...iterTuple) { ((iterTuple++), ...); }, refHolder);
@@ -36,16 +36,19 @@ struct MultiIterator {
     return temp;
   }
 
-  bool atEnd() const { return offset == arch.size() - 1; }
+  bool atEnd() const { return _offset == arch.size() - 1; }
 
   friend bool operator==(const MultiIterator &a, const MultiIterator &b) {
     // Comparing the data of both archetypes is too expensive
-    return (a.offset == b.offset) && (&a.arch == &b.arch);
+    return (a._offset == b._offset) && (&a.arch == &b.arch);
   }
 
+  u32 offset() const { return _offset; }
+
+  u32 numberOfEntities() const { return arch.size(); }
 private:
   Archetype   &arch;
-  u32          offset = 0;
+  u32          _offset = 0;
   element_type refHolder;
 };
 } // namespace ecs
