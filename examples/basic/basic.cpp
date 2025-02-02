@@ -28,7 +28,7 @@ struct Player {
 struct Enemy {};
 
 void checkGoalMet(ecs::ResourceBundle r, ecs::ComponentIter<Enemy, Health> enemies) {
-  auto deadEnemies = 0;
+  u32 deadEnemies = 0;
   for (const auto &[_, eHealth] : enemies) {
     if (eHealth->value == 0) {
       deadEnemies += 1;
