@@ -6,6 +6,7 @@
 #include "multi_iterator.h"
 #include "type_set.h"
 #include <algorithm>
+#include <numeric>
 #include <utility>
 #include <vector>
 
@@ -17,6 +18,17 @@ struct QueryView {
 
   ChainedIterator<Ts...> begin() { return ChainedIterator(iters, 0); }
   ChainedIterator<Ts...> end() { return ChainedIterator(iters, iters.size()); }
+
+  u32 numberOfEntities() const {
+    return std::accumulate(
+        iters.cbegin(),
+        iters.cend(),
+        0,
+        [](u32 const &count, MultiIterator<Ts...> const &multiIterator) {
+          return count + multiIterator.numberOfEntities();
+        }
+    );
+  }
 
 private:
   std::vector<MultiIterator<Ts...>> iters;
