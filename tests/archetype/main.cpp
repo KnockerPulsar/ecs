@@ -1,6 +1,7 @@
 #include "defs.h"
 #include "ecs.h"
 #include "level.h"
+#include "resources.h"
 
 #include <cmath>
 
@@ -11,16 +12,11 @@ struct D {};
 struct E {};
 
 template <typename ...Ts>
-auto testArchetypes(ecs::Level& level, int expectedSize)
+auto testArchetypes(ecs::Level& level, u32 expectedSize)
 {
-  auto const abCount   = 2;
   level.addPerFrameSystem<ecs::Query<Ts...>>([expectedSize](ecs::ComponentIter<Ts...> comps) {
-    auto counter = 0;
-    for (auto const _ : comps)
-      counter++;
-
-    if (counter != expectedSize) {
-      std::cerr << ecs::print(ecs::Query<Ts...>{}) << " actual component count: " << counter
+    if (auto const numberOfEntities = comps.numberOfEntities(); numberOfEntities != expectedSize) {
+      std::cerr << ecs::print(ecs::Query<Ts...>{}) << " actual component count: " << numberOfEntities
                 << ", expected: " << expectedSize << '\n';
       assert(false);
     }
@@ -40,10 +36,9 @@ auto setupTestLevel(ecs::Resources & resources, ecs::Level &level) {
 
   assert(level.archetypes.size() == 4 && "Should have 4 archetypes!");
 
-  level.removeEntity(ab1);
-  testArchetypes<A, B>(level, 1);
+  level.addPerFrameSystem<ecs::ResourceBundle>([&level, ab1](ecs::ResourceBundle) { level.removeEntity(ab1); });
 
-  resources.addResource(ecs::Quit{});
+  testArchetypes<A, B>(level, 1);
 }
 
 int main() {
