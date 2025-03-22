@@ -17,9 +17,5 @@ include_directories(
 
 link_directories(${RAYLIB_DIR}/lib)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG    ${PROJECT_SOURCE_DIR}/build/debug)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE  ${PROJECT_SOURCE_DIR}/build/release)
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
-
 add_executable(${PROJECT_NAME} src/main.cpp ${SOURCES})
 target_link_libraries(${PROJECT_NAME} -lraylib)

@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     ecs.addGlobalResource(pong::ScreenWidth(GetScreenWidth()));
     ecs.addGlobalResource(pong::ScreenHeight(GetScreenHeight()));
 
-    ecs.addGlobalResource(pong::Input{});
+    ecs.addGlobalResource(pong::Input{pong::Input::InputType::playback, "./record_test.txt"});
     ecs.addGlobalResource(pong::Renderer{});
   }
 
