@@ -100,7 +100,7 @@ public:
 
   template <typename T>
   Iter<T> getComponentIterAtOffset(u32 offset) {
-    auto compVec = getComponentVector<T>();
+    auto& compVec = getComponentVector<T>();
     return compVec.begin() + offset;
   }
 
