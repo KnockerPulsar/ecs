@@ -7,13 +7,20 @@
 #include "levels/main_menu.h"
 
 #include "raylib.h"
-
-#include <string>
+#include <cstring>
 
 int main(int argc, char **argv) {
 
   InitWindow(800, 800, "ecs-pong");
   SetTargetFPS(GetMonitorRefreshRate(0));
+  pong::Input::InputType inputType = pong::Input::InputType::playback;
+  for (int i = 1 /*skip program name*/; i < argc; i++) {
+    if(strcmp("--record", argv[i]) == 0)
+      inputType = pong::Input::InputType::record;
+
+    if(strcmp("--playback", argv[i]) == 0)
+      inputType = pong::Input::InputType::playback;
+  }
 
   ecs::ECS ecs;
 
@@ -25,7 +32,7 @@ int main(int argc, char **argv) {
     ecs.addGlobalResource(pong::ScreenWidth(GetScreenWidth()));
     ecs.addGlobalResource(pong::ScreenHeight(GetScreenHeight()));
 
-    ecs.addGlobalResource(pong::Input{pong::Input::InputType::playback, "./record_test.txt"});
+    ecs.addGlobalResource(pong::Input{inputType, "./record_test.txt"});
     ecs.addGlobalResource(pong::Renderer{});
   }
 
