@@ -45,9 +45,11 @@ int main(int argc, char **argv) {
     ecs.addGlobalResourceSystemPost([](ecs::Resources &global) {
       auto &dt   = global.getResource<pong::DeltaTime>()->get();
       auto &time = global.getResource<pong::Time>()->get();
+      auto &frame = global.getResource<pong::Frame>()->get();
 
       dt = pong::DeltaTime(GetFrameTime());
       time += GetFrameTime();
+      frame += 1;
     });
   }
 
