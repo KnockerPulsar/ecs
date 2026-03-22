@@ -12,7 +12,7 @@
 int main(int argc, char **argv) {
 
   InitWindow(800, 800, "ecs-pong");
-  SetTargetFPS(GetMonitorRefreshRate(0));
+  SetTargetFPS(60);
   pong::Input::InputType inputType = pong::Input::InputType::playback;
   for (int i = 1 /*skip program name*/; i < argc; i++) {
     if(strcmp("--record", argv[i]) == 0)
@@ -47,8 +47,8 @@ int main(int argc, char **argv) {
       auto &time = global.getResource<pong::Time>()->get();
       auto &frame = global.getResource<pong::Frame>()->get();
 
-      dt = pong::DeltaTime(GetFrameTime());
-      time += GetFrameTime();
+      dt = pong::DeltaTime(1.0f / 60.0f);
+      time += 1.0f / 60.0f;
       frame += 1;
     });
   }
