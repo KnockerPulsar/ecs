@@ -73,8 +73,7 @@ struct Input {
 
   static void pollNewInputs(ecs::Resources &global) {
     auto &input = global.getResource<Input>()->get();
-    auto &time  = global.getResource<Time>()->get();
-
+    auto &frame  = global.getResource<Frame>()->get();
     if (input.inputType == InputType::record) {
       State newState;
       for (u32 i = 0; i < newState.frameKeysDown.size(); i++) {
@@ -82,12 +81,12 @@ struct Input {
       }
 
       if(newState != input.state) {
-        input.inputStates.push({time, newState});
+        input.inputStates.push({frame, newState});
         /* input.prevState = input.state; */
         input.state     = newState;
       }
     } else {
-      if (auto state = input.getState(time)) {
+      if (auto state = input.getState(frame)) {
         input.prevState = input.state;
         input.state     = *state;
       }
@@ -108,12 +107,12 @@ struct Input {
 
   State getState() const { return state; }
 
-  void recordInputs(Time time, Input::State const &state) { inputStates.push({time, state}); }
+  void recordInputs(Frame frame, Input::State const &state) { inputStates.push({frame, state}); }
 
   // Can we return multiple states in case the a frame takes too long and there
   // are multiple states with time < current time?
-  std::optional<Input::State> getState(Time time) {
-    if (time < inputStates.front().first)
+  std::optional<Input::State> getState(Frame frame) {
+    if (inputStates.empty() || frame < inputStates.front().first)
       return {};
 
     auto const [_, retState] = inputStates.front();
@@ -127,10 +126,10 @@ struct Input {
 
     while(!inputStates.empty())
     {
-      auto const [time, state] = inputStates.front();
+      auto const [frame, state] = inputStates.front();
       inputStates.pop();
 
-      outputFile << std::format("{:<16} {}\n", time.value, to_string(state));
+      outputFile << std::format("{:<16} {}\n", frame.value, to_string(state));
     }
   }
 
@@ -138,16 +137,16 @@ struct Input {
     std::ifstream inputFile{filePath};
 
     while (!inputFile.eof()) {
-      float        time;
+      Frame        frame;
       Input::State state;
-      inputFile >> time >> state;
+      inputFile >> frame >> state;
 
-      inputStates.push({Time{time}, state});
+      inputStates.push({frame, state});
     }
   }
 
 private:
-  std::queue<std::pair<Time, Input::State>> inputStates;
+  std::queue<std::pair<Frame, Input::State>> inputStates;
   State                                     state, prevState;
   InputType const                           inputType;
   std::filesystem::path const               filepath;
