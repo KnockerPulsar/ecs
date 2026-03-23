@@ -20,7 +20,6 @@ namespace pong {
 struct Input {
   enum class InputType : std::uint8_t { playback, record };
   using TimeStamp = std::chrono::nanoseconds;
-
   struct State {
     // Raylib's `KeyboardKey` enum has a maximum value of 348.
     std::array<bool, 348> frameKeysDown;
@@ -59,6 +58,8 @@ struct Input {
     friend bool operator<=>(State const &lhs, State const &rhs) = default;
   };
 
+  using FrameInputState = std::tuple<Frame, DeltaTime, Input::State>;
+
   Input(InputType type, std::filesystem::path path) : inputType(type), filepath(path) {
     if (type == InputType::playback) {
       readFromFile(path);
@@ -73,22 +74,20 @@ struct Input {
 
   static void pollNewInputs(ecs::Resources &global) {
     auto &input = global.getResource<Input>()->get();
-    auto &frame  = global.getResource<Frame>()->get();
+    auto &frame = global.getResource<Frame>()->get();
+    auto &dt    = global.getResource<DeltaTime>()->get();
     if (input.inputType == InputType::record) {
       State newState;
       for (u32 i = 0; i < newState.frameKeysDown.size(); i++) {
         newState.frameKeysDown[i] = IsKeyDown(static_cast<KeyboardKey>(i));
       }
 
-      if(newState != input.state) {
-        input.inputStates.push({frame, newState});
-        /* input.prevState = input.state; */
-        input.state     = newState;
-      }
+      input.inputStates.push({frame, dt, newState});
+      input.state = newState;
     } else {
-      if (auto state = input.getState(frame)) {
+      if (auto frameState = input.getState(frame)) {
         input.prevState = input.state;
-        input.state     = *state;
+        input.state     = std::get<2>(*frameState);
       }
     }
   }
@@ -105,20 +104,18 @@ struct Input {
     return prevState.frameKeysDown[static_cast<u32>(k)] && !state.frameKeysDown[static_cast<u32>(k)];
   }
 
-  State getState() const { return state; }
-
-  void recordInputs(Frame frame, Input::State const &state) { inputStates.push({frame, state}); }
+  FrameInputState getState() const { return inputStates.front(); }
 
   // Can we return multiple states in case the a frame takes too long and there
   // are multiple states with time < current time?
-  std::optional<Input::State> getState(Frame frame) {
-    if (inputStates.empty() || frame < inputStates.front().first)
+  std::optional<FrameInputState> getState(Frame frame) {
+    auto const ret = inputStates.front();
+    if (inputStates.empty() || frame < std::get<0>(ret))
       return {};
 
-    auto const [_, retState] = inputStates.front();
     inputStates.pop();
 
-    return retState;
+    return {ret};
   }
 
   void writeToFile(std::filesystem::path filePath) {
@@ -126,10 +123,10 @@ struct Input {
 
     while(!inputStates.empty())
     {
-      auto const [frame, state] = inputStates.front();
+      auto const [frame, dt, state] = inputStates.front();
       inputStates.pop();
 
-      outputFile << std::format("{:<16} {}\n", frame.value, to_string(state));
+      outputFile << std::format("{:<16} {} {}\n", frame.value, dt.value, to_string(state));
     }
   }
 
@@ -138,15 +135,16 @@ struct Input {
 
     while (!inputFile.eof()) {
       Frame        frame;
+      DeltaTime    dt;
       Input::State state;
-      inputFile >> frame >> state;
+      inputFile >> frame >> dt >>  state;
 
-      inputStates.push({frame, state});
+      inputStates.push({frame, dt, state});
     }
   }
 
 private:
-  std::queue<std::pair<Frame, Input::State>> inputStates;
+  std::queue<FrameInputState> inputStates;
   State                                     state, prevState;
   InputType const                           inputType;
   std::filesystem::path const               filepath;

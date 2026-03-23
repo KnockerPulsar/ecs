@@ -42,13 +42,20 @@ int main(int argc, char **argv) {
 
     ecs.addGlobalResourceSystemPost(pong::Renderer::system);
     ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
-    ecs.addGlobalResourceSystemPost([](ecs::Resources &global) {
+    ecs.addGlobalResourceSystemPost([&](ecs::Resources &global) {
       auto &dt   = global.getResource<pong::DeltaTime>()->get();
       auto &time = global.getResource<pong::Time>()->get();
       auto &frame = global.getResource<pong::Frame>()->get();
+      auto &input = global.getResource<pong::Input>()->get();
 
-      dt = pong::DeltaTime(1.0f / 60.0f);
-      time += 1.0f / 60.0f;
+      auto currentInputState = input.getState();
+      if (inputType == pong::Input::InputType::playback) {
+        dt = std::get<1>(currentInputState);
+      } else {
+        dt = pong::DeltaTime{GetFrameTime()};
+      }
+
+      time += dt;
       frame += 1;
     });
   }
