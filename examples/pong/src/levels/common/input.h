@@ -58,7 +58,7 @@ struct Input {
     friend bool operator<=>(State const &lhs, State const &rhs) = default;
   };
 
-  using FrameInputState = std::tuple<Frame, DeltaTime, Input::State>;
+  using FrameInputState = std::tuple<DeltaTime, Input::State>;
 
   Input(InputType type, std::filesystem::path path) : inputType(type), filepath(path) {
     if (type == InputType::playback) {
@@ -74,7 +74,6 @@ struct Input {
 
   static void pollNewInputs(ecs::Resources &global) {
     auto &input = global.getResource<Input>()->get();
-    auto &frame = global.getResource<Frame>()->get();
     auto &dt    = global.getResource<DeltaTime>()->get();
     if (input.inputType == InputType::record) {
       State newState;
@@ -82,12 +81,12 @@ struct Input {
         newState.frameKeysDown[i] = IsKeyDown(static_cast<KeyboardKey>(i));
       }
 
-      input.inputStates.push({frame, dt, newState});
+      input.inputStates.push({dt, newState});
       input.state = newState;
     } else {
-      if (auto frameState = input.getState(frame)) {
+      if (auto frameState = input.getNextFrameInputState()) {
         input.prevState = input.state;
-        input.state     = std::get<2>(*frameState);
+        input.state     = std::get<1>(*frameState);
       }
     }
   }
@@ -106,11 +105,9 @@ struct Input {
 
   FrameInputState getState() const { return inputStates.front(); }
 
-  // Can we return multiple states in case the a frame takes too long and there
-  // are multiple states with time < current time?
-  std::optional<FrameInputState> getState(Frame frame) {
+  std::optional<FrameInputState> getNextFrameInputState() {
     auto const ret = inputStates.front();
-    if (inputStates.empty() || frame < std::get<0>(ret))
+    if (inputStates.empty())
       return {};
 
     inputStates.pop();
@@ -123,10 +120,10 @@ struct Input {
 
     while(!inputStates.empty())
     {
-      auto const [frame, dt, state] = inputStates.front();
+      auto const [dt, state] = inputStates.front();
       inputStates.pop();
 
-      outputFile << std::format("{:<16} {} {}\n", frame.value, dt.value, to_string(state));
+      outputFile << std::format("{} {}\n", dt.value, to_string(state));
     }
   }
 
@@ -134,12 +131,11 @@ struct Input {
     std::ifstream inputFile{filePath};
 
     while (!inputFile.eof()) {
-      Frame        frame;
       DeltaTime    dt;
       Input::State state;
-      inputFile >> frame >> dt >>  state;
+      inputFile >> dt >>  state;
 
-      inputStates.push({frame, dt, state});
+      inputStates.push({dt, state});
     }
   }
 

@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 
       auto currentInputState = input.getState();
       if (inputType == pong::Input::InputType::playback) {
-        dt = std::get<1>(currentInputState);
+        dt = std::get<0>(currentInputState);
       } else {
         dt = pong::DeltaTime{GetFrameTime()};
       }
