@@ -6,14 +6,14 @@
 
 #include <raylib.h>
 
+#include <array>
 #include <chrono>
 #include <filesystem>
-#include <array>
-#include <queue>
-#include <fstream>
 #include <format>
-#include <string>
+#include <fstream>
+#include <queue>
 #include <ranges>
+#include <string>
 
 namespace pong {
 struct Input {
@@ -67,14 +67,14 @@ struct Input {
 
   using FrameInputState = std::tuple<DeltaTime, Input::State>;
 
-  Input(InputType type, std::filesystem::path path) : inputType(type), filepath(path) {
+  Input(std::optional<InputType> type, std::filesystem::path path) : inputType(type), filepath(path) {
     if (type == InputType::playback) {
       readFromFile(path);
     }
   }
 
   ~Input() {
-    if (inputType == InputType::record) {
+    if (inputType && *inputType == InputType::record) {
       writeToFile(filepath);
     }
   }
@@ -82,20 +82,28 @@ struct Input {
   static void pollNewInputs(ecs::Resources &global) {
     auto &input = global.getResource<Input>()->get();
     auto &dt    = global.getResource<DeltaTime>()->get();
-    if (input.inputType == InputType::record) {
-      State newState;
-      for (u32 i = 0; i < newState.frameKeysDown.size(); i++) {
-        newState.frameKeysDown[i] = IsKeyDown(static_cast<KeyboardKey>(i));
-      }
 
-      input.inputStates.push({dt, newState});
-      input.state = newState;
-    } else {
-      if (auto frameState = input.getNextFrameInputState()) {
-        input.prevState = input.state;
-        input.state     = std::get<1>(*frameState);
+    State const prevState = input.state;
+    State newState;
+    for (u32 i = 0; i < newState.frameKeysDown.size(); i++) {
+      newState.frameKeysDown[i] = IsKeyDown(static_cast<KeyboardKey>(i));
+    }
+
+    if (auto const it = input.inputType) {
+      if (it == InputType::playback) {
+        if (!input.inputStates.empty()) {
+          auto const [_, frameState] = input.inputStates.front();
+          input.inputStates.pop();
+
+          newState = frameState;
+        }
+      } else {
+        input.inputStates.push({dt, newState});
       }
     }
+
+    input.prevState = prevState;
+    input.state = newState;
   }
 
   static void onFrameEnd(ecs::Resources &global) {
@@ -110,23 +118,19 @@ struct Input {
     return prevState.frameKeysDown[static_cast<u32>(k)] && !state.frameKeysDown[static_cast<u32>(k)];
   }
 
-  std::optional<FrameInputState> getState() const {
-    if (inputStates.empty())
-      return {};
+  std::optional<FrameInputState> getCurrentInputState() {
+    if (
+      auto const it = inputType;
+      it && it == InputType::playback && !inputStates.empty()
+    ) {
+      auto const ret = inputStates.front();
+      return ret;
+    }
 
-    return inputStates.front();
+    return std::nullopt;
   }
 
-  std::optional<FrameInputState> getNextFrameInputState() {
-    auto const ret = inputStates.front();
-    if (inputStates.empty())
-      return {};
-
-    inputStates.pop();
-
-    return {ret};
-  }
-
+  // TODO should be private
   void writeToFile(std::filesystem::path filePath) {
     std::ofstream outputFile{filePath};
 
@@ -139,6 +143,7 @@ struct Input {
     }
   }
 
+  // TODO should be private
   void readFromFile(std::filesystem::path filePath) {
     std::ifstream inputFile{filePath};
 
@@ -158,7 +163,7 @@ struct Input {
 private:
   std::queue<FrameInputState> inputStates;
   State                                     state, prevState;
-  InputType const                           inputType;
+  std::optional<InputType> const            inputType;
   std::filesystem::path const               filepath;
 };
 } // namespace pong

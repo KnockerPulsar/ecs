@@ -13,14 +13,19 @@ int main(int argc, char **argv) {
 
   InitWindow(800, 800, "ecs-pong");
   SetTargetFPS(60);
-  pong::Input::InputType inputType = pong::Input::InputType::playback;
-  for (int i = 1 /*skip program name*/; i < argc; i++) {
-    if(strcmp("--record", argv[i]) == 0)
-      inputType = pong::Input::InputType::record;
 
-    if(strcmp("--playback", argv[i]) == 0)
-      inputType = pong::Input::InputType::playback;
-  }
+  std::optional<pong::Input::InputType> inputType
+    = [&argc, argv] -> std::optional<pong::Input::InputType> {
+    for (int i = 1 /*skip program name*/; i < argc; i++) {
+      if (strcmp("--record", argv[i]) == 0)
+        return pong::Input::InputType::record;
+
+      if (strcmp("--playback", argv[i]) == 0)
+        return pong::Input::InputType::playback;
+    }
+
+    return std::nullopt;
+  }();
 
   ecs::ECS ecs;
 
@@ -43,14 +48,15 @@ int main(int argc, char **argv) {
     ecs.addGlobalResourceSystemPost(pong::Renderer::system);
     ecs.addGlobalResourceSystemPost(pong::Input::onFrameEnd);
     ecs.addGlobalResourceSystemPost([&](ecs::Resources &global) {
-      auto &dt   = global.getResource<pong::DeltaTime>()->get();
-      auto &time = global.getResource<pong::Time>()->get();
+      auto &dt    = global.getResource<pong::DeltaTime>()->get();
+      auto &time  = global.getResource<pong::Time>()->get();
       auto &frame = global.getResource<pong::Frame>()->get();
       auto &input = global.getResource<pong::Input>()->get();
 
-      if (inputType == pong::Input::InputType::playback) {
-        if (auto const currentInputState = input.getState())
+      if (inputType && *inputType == pong::Input::InputType::playback) {
+        if (auto const currentInputState = input.getCurrentInputState()) {
           dt = std::get<0>(*currentInputState);
+        }
       } else {
         dt = pong::DeltaTime{GetFrameTime()};
       }
