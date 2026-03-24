@@ -67,6 +67,8 @@ struct Input {
 
   using FrameInputState = std::tuple<DeltaTime, Input::State>;
 
+  Input() = default;
+
   Input(std::optional<InputType> type, std::filesystem::path path) : inputType(type), filepath(path) {
     if (type == InputType::playback) {
       readFromFile(path);

@@ -7,25 +7,61 @@
 #include "levels/main_menu.h"
 
 #include "raylib.h"
-#include <cstring>
 
-int main(int argc, char **argv) {
+auto parseArguments(int argc, char **argv)
+  -> std::optional<std::pair<pong::Input::InputType, std::string>> {
+  auto const printHelpAndExit = [=]{
+      std::println(
+        std::cerr, "Usage: {} [--record <path> | --playback <path>]", argv[0]
+      );
+      std::exit(0);
+  };
 
-  InitWindow(800, 800, "ecs-pong");
-  SetTargetFPS(60);
+  for (int i = 1 /*skip program name*/; i < argc; i++) {
+    std::string_view opt{argv[i]};
+    if (opt == "--record") {
+      if (i + 1 >= argc) // Check if there is no next argument
+        printHelpAndExit();
 
-  std::optional<pong::Input::InputType> inputType
-    = [&argc, argv] -> std::optional<pong::Input::InputType> {
-    for (int i = 1 /*skip program name*/; i < argc; i++) {
-      if (strcmp("--record", argv[i]) == 0)
-        return pong::Input::InputType::record;
-
-      if (strcmp("--playback", argv[i]) == 0)
-        return pong::Input::InputType::playback;
+      return {{pong::Input::InputType::record, std::string{argv[i + 1]}}};
     }
 
+    if (opt == "--playback") {
+      if (i + 1 >= argc)
+        printHelpAndExit();
+
+      auto const recordingPath = std::string{argv[i + 1]};
+      if (!std::filesystem::exists(recordingPath)) {
+        std::println(
+          std::cerr,
+          "Error opening file '{}': File does not exist",
+          recordingPath
+        );
+        std::exit(1);
+      }
+
+      if (!std::filesystem::is_regular_file(recordingPath)) {
+        std::println(
+          std::cerr, "Error opening file '{}': Is not a file", recordingPath
+        );
+        std::exit(1);
+      }
+
+      return {{pong::Input::InputType::playback, recordingPath}};
+    }
+
+    printHelpAndExit();
+  }
+
     return std::nullopt;
-  }();
+}
+
+int main(int argc, char **argv) {
+  auto const inputTypeAndPath = parseArguments(argc, argv);
+
+  // TODO maybe this should be moved into the renderer
+  InitWindow(800, 800, "ecs-pong");
+  SetTargetFPS(60);
 
   ecs::ECS ecs;
 
@@ -37,7 +73,13 @@ int main(int argc, char **argv) {
     ecs.addGlobalResource(pong::ScreenWidth(GetScreenWidth()));
     ecs.addGlobalResource(pong::ScreenHeight(GetScreenHeight()));
 
-    ecs.addGlobalResource(pong::Input{inputType, "./record_test.txt"});
+    if (inputTypeAndPath) {
+      auto const [inputType, recordingPath] = *inputTypeAndPath;
+      ecs.addGlobalResource(pong::Input{inputType, recordingPath});
+    } else {
+      ecs.addGlobalResource(pong::Input{});
+    }
+
     ecs.addGlobalResource(pong::Renderer{});
   }
 
@@ -53,7 +95,9 @@ int main(int argc, char **argv) {
       auto &frame = global.getResource<pong::Frame>()->get();
       auto &input = global.getResource<pong::Input>()->get();
 
-      if (inputType && *inputType == pong::Input::InputType::playback) {
+      if(inputTypeAndPath)
+      {
+        auto const [inputType, _] = *inputTypeAndPath;
         if (auto const currentInputState = input.getCurrentInputState()) {
           dt = std::get<0>(*currentInputState);
         }
