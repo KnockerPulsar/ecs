@@ -1,0 +1,5 @@
+Input system should not be handled by the game.
+    That can be moved to the ECS system. That will read inputs and feed the
+    game actions. Allows for custom mappings from inputs to actions.
+Compile times could be improved by not having everything be a header
+Binary input recording format?
