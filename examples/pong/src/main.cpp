@@ -48,9 +48,9 @@ int main(int argc, char **argv) {
       auto &frame = global.getResource<pong::Frame>()->get();
       auto &input = global.getResource<pong::Input>()->get();
 
-      auto currentInputState = input.getState();
       if (inputType == pong::Input::InputType::playback) {
-        dt = std::get<0>(currentInputState);
+        if (auto const currentInputState = input.getState())
+          dt = std::get<0>(*currentInputState);
       } else {
         dt = pong::DeltaTime{GetFrameTime()};
       }

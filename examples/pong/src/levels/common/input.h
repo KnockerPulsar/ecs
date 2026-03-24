@@ -4,17 +4,16 @@
 #include "defs.h"
 #include "resources.h"
 
-#include <chrono>
-#include <filesystem>
-#include <ratio>
 #include <raylib.h>
 
+#include <chrono>
+#include <filesystem>
 #include <array>
 #include <queue>
 #include <fstream>
 #include <format>
-#include <sstream>
 #include <string>
+#include <ranges>
 
 namespace pong {
 struct Input {
@@ -30,16 +29,23 @@ struct Input {
     }
 
     friend std::string to_string(State const &state) {
-      std::stringstream ss;
+      using namespace std::ranges;
 
-      for (const auto *iter = state.frameKeysDown.begin(); iter != state.frameKeysDown.end(); iter++) {
-        ss << *iter;
+      auto const keyDown = [](auto const index_key) {
+        auto [_, key] = index_key;
+        return key == true;
+      };
 
-        if (std::next(iter) != state.frameKeysDown.end())
-          ss << ' ';
-      }
+      auto const indexToString = [](auto const index_key) {
+        return std::to_string(std::get<0>(index_key));
+      };
 
-      return ss.str();
+      return state.frameKeysDown               //
+             | views::enumerate                //
+             | views::filter(keyDown)          //
+             | views::transform(indexToString) //
+             | views::join_with(' ')           //
+             | to<std::string>();
     }
 
     friend std::ostream &operator<<(std::ostream &ostream, State const &state) {
@@ -48,8 +54,9 @@ struct Input {
     }
 
     friend std::istream &operator>>(std::istream &istream, State &state) {
-      for (auto& k: state.frameKeysDown) {
-        istream >> k;
+      size_t index;
+      while (istream >> index) {
+        state.frameKeysDown.at(index) = true;
       }
 
       return istream;
@@ -103,7 +110,12 @@ struct Input {
     return prevState.frameKeysDown[static_cast<u32>(k)] && !state.frameKeysDown[static_cast<u32>(k)];
   }
 
-  FrameInputState getState() const { return inputStates.front(); }
+  std::optional<FrameInputState> getState() const {
+    if (inputStates.empty())
+      return {};
+
+    return inputStates.front();
+  }
 
   std::optional<FrameInputState> getNextFrameInputState() {
     auto const ret = inputStates.front();
@@ -130,10 +142,14 @@ struct Input {
   void readFromFile(std::filesystem::path filePath) {
     std::ifstream inputFile{filePath};
 
-    while (!inputFile.eof()) {
+    std::string line;
+    while (std::getline(inputFile, line)) {
+      std::stringstream ss{line};
+
       DeltaTime    dt;
       Input::State state;
-      inputFile >> dt >>  state;
+
+      ss >> dt >>  state;
 
       inputStates.push({dt, state});
     }
