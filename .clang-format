@@ -7,10 +7,15 @@ IndentWidth: 2
 NamespaceIndentation: Inner
 BinPackArguments: false
 BinPackParameters: false
-ColumnLimit: 120
+ColumnLimit: 80
 BraceWrapping:
   AfterStruct: true
 
 AlignAfterOpenBracket: BlockIndent
 AlwaysBreakTemplateDeclarations: Yes
 IndentRequiresClause: false
+
+BreakBeforeBinaryOperators: All
+AlignOperands: Align
+AllowShortLambdasOnASingleLine: All
+ContinuationIndentWidth: 2

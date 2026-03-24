@@ -1,10 +1,10 @@
 CompileFlags:
   # Treat code as C++, use C++20 standard, enable more warnings.
-  Add: [-xc++, -std=c++20, -Wno-missing-prototypes, -I=vendor/**]
+  Add: [-xc++, -Wno-missing-prototypes, -I=vendor/**]
   # Remove extra warnings specified in compile commands.
   # Single value is also acceptable, same as "Remove: [-mabi]"
   Remove: -mabi
-  
+
 Diagnostics:
   # Tweak Clang-Tidy checks.
   ClangTidy:
