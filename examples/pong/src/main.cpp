@@ -1,4 +1,4 @@
-#include "ecs.h"
+#include "ecs/ecs.h"
 
 #include "common/common.h"
 #include "common/input.h"

@@ -9,7 +9,12 @@ CMAKE_POLICY(SET CMP0074 NEW)
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -flto -march=native")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -Wall")
-set(ECS_DIR ecs/src CACHE PATH "Directory containing ECS header files")
+
+set(ECS_DIR ecs/ CACHE PATH "Directory containing ECS header files")
+
+include_directories(
+    ${ECS_DIR}/include
+)
 
 add_subdirectory(examples/basic)
 add_subdirectory(examples/pong)

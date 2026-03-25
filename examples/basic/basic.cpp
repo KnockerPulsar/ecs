@@ -1,7 +1,7 @@
-#include "defs.h"
-#include "ecs.h"
-#include "level.h"
-#include "resources.h"
+#include "ecs/defs.h"
+#include "ecs/ecs.h"
+#include "ecs/level.h"
+#include "ecs/resources.h"
 
 #include <algorithm>
 #include <chrono>

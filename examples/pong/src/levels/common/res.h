@@ -1,6 +1,6 @@
-#pragma once 
+#pragma once
 
-#include "defs.h"
+#include "ecs/defs.h"
 #include "raylib.h"
 
 #include <string>

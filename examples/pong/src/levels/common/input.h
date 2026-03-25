@@ -1,8 +1,9 @@
 #pragma once
 
 #include "common/res.h"
-#include "defs.h"
-#include "resources.h"
+
+#include "ecs/defs.h"
+#include "ecs/resources.h"
 
 #include <raylib.h>
 
